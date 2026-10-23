@@ -1,0 +1,16 @@
+{
+  "name": "agenda-app",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "scripts": {
+    "dev:web": "npm run build --workspace=@agenda-app/shared && npm run dev --workspace=@agenda-app/web",
+    "dev:api": "npm run start:dev --workspace=@agenda-app/api",
+    "build": "npm run build --workspace=@agenda-app/api && npm run build --workspace=@agenda-app/web"
+  }
+}
