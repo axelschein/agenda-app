@@ -2,7 +2,7 @@
 
 AgendaApp permite que clientes consulten disponibilidad y soliciten reservas, mientras que administradores gestionan servicios, disponibilidad y reservas.
 
-La arquitectura y los límites entre componentes están documentados en [README-ARQUITECTURA-PROPUESTA.md](README-ARQUITECTURA-PROPUESTA.md).
+La arquitectura y los límites entre componentes están documentados en [README-ARQUITECTURA-PROPUESTA.md](docs/README-ARQUITECTURA-PROPUESTA.md).
 
 ## Stack elegido: Opción A
 

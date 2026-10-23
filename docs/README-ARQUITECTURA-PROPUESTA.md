@@ -4,7 +4,7 @@
 
 Separar la experiencia de usuario, los casos de uso y las reglas del negocio, y el acceso a la persistencia para el MVP de AgendaApp. La arquitectura representa un monolito modular: una API central con módulos de dominio claros, sin añadir servicios distribuidos antes de necesitarlos.
 
-La arquitectura describe responsabilidades y límites. El stack elegido (Next.js + NestJS con TypeScript) se detalla en el [README principal](README.md).
+La arquitectura describe responsabilidades y límites. El stack elegido (Next.js + NestJS con TypeScript) se detalla en el [README principal](../README.md).
 
 ## Componentes
 
@@ -134,13 +134,13 @@ agenda-app/
 ├─ packages/
 │  └─ shared/                      # tipos y contratos públicos
 ├─ docs/
+│  ├─ README-ARQUITECTURA-PROPUESTA.md
 │  ├─ casos-de-uso/
 │  └─ diagramas/
 ├─ package.json                    # workspaces y comandos comunes de npm
 ├─ .nvmrc                          # versión de Node.js para NVM
 ├─ tsconfig.base.json
 ├─ README.md                       # stack elegido y cómo iniciar
-└─ README-ARQUITECTURA-PROPUESTA.md
 ```
 
 ## Límites de dependencias
