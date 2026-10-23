@@ -2,31 +2,62 @@
 
 AgendaApp permite que clientes consulten disponibilidad y soliciten reservas, mientras que administradores gestionan servicios, disponibilidad y reservas.
 
-Este repositorio documenta dos alternativas tecnológicas para implementar la misma arquitectura. La elección del stack no cambia las responsabilidades de cada componente; la arquitectura común está en [README-ARQUITECTURA-PROPUESTA.md](README-ARQUITECTURA-PROPUESTA.md).
+La arquitectura y los límites entre componentes están documentados en [README-ARQUITECTURA-PROPUESTA.md](docs/README-ARQUITECTURA-PROPUESTA.md).
 
-## Opción A: TypeScript en frontend y backend
+## Stack elegido: Opción A
 
-- **Frontend:** Next.js con TypeScript, en `apps/web`.
-- **Backend:** NestJS con TypeScript, en `apps/api`.
-- **Monorepo:** pnpm workspaces.
-- **Contratos compartidos:** `packages/shared` para tipos, esquemas de validación y contratos de la API que puedan reutilizar ambas aplicaciones.
-- **Persistencia:** responsabilidad exclusiva del backend. La base de datos y el ORM quedan por definir.
+- **Frontend:** Next.js con TypeScript en `apps/web`.
+- **Backend:** NestJS con TypeScript en `apps/api`.
+- **Monorepo:** NPM Workspaces, incluidos en NPM.
+- **Paquete compartido:** `packages/shared` contiene contratos y tipos públicos que usan ambas aplicaciones. No contiene reglas de negocio ni acceso a datos.
+- **Persistencia:** solo la API accederá a la persistencia. La base de datos y el ORM quedan por definir.
 
-Esta alternativa mantiene un solo lenguaje y facilita compartir contratos entre frontend y backend. Permite organizar el backend con módulos, clases y servicios, conservando una API separada de la interfaz.
+Esta opción mantiene un lenguaje y un conjunto de herramientas comunes. El backend se organiza como un monolito modular con módulos NestJS para identidad y acceso, usuarios, servicios, disponibilidad y reservas.
 
-## Opción B: Java en backend y TypeScript en frontend
 
-- **Frontend:** Next.js con TypeScript, en `apps/web`.
-- **Backend:** Spring Boot con Java, en `apps/api`.
-- **Monorepo:** pnpm workspaces para gestionar el frontend y las herramientas del repositorio. El backend mantiene su propio ciclo de compilación y dependencias Java.
-- **Contrato entre aplicaciones:** especificación OpenAPI mantenida como contrato de la API; el cliente y los tipos del frontend pueden generarse a partir de ella.
-- **Persistencia:** responsabilidad exclusiva del backend. La base de datos y la tecnología de persistencia quedan por definir.
+## Requisitos
 
-Esta alternativa usa Java y su ecosistema orientado a objetos en el backend, y mantiene Next.js en el frontend. La comunicación entre ambos lados se acuerda mediante una API HTTP documentada, en vez de compartir clases directamente.
+- Node.js `22.22.3`, seleccionada con NVM.
+- NPM, incluido con Node.js.
 
-## Criterio de elección
+## Inicio local
 
-- Elegir **Opción A** si se prioriza reducir la cantidad de ecosistemas y compartir tipos y validaciones dentro del monorepo.
-- Elegir **Opción B** si el proyecto académico requiere Java o se quiere practicar específicamente el diseño orientado a objetos con Java.
+Con NVM para Windows, instalá y seleccioná la versión definida en `.nvmrc`:
 
-Las dos opciones contemplan los roles Admin y Cliente y el flujo básico de reservas descrito en el documento de arquitectura. No se ha elegido aún una base de datos ni un ORM.
+```powershell
+nvm install 22.22.3
+nvm use 22.22.3
+```
+
+Instalá las dependencias desde la raíz del repositorio:
+
+```bash
+npm install
+```
+
+Iniciá cada aplicación en una terminal separada:
+
+```bash
+npm run dev:web
+```
+
+```bash
+npm run dev:api
+```
+
+La web queda disponible en `http://localhost:3000` y la API en `http://localhost:3001/api/v1`. El endpoint de disponibilidad de la API es `GET /api/v1/health`.
+
+## Estructura
+
+```text
+apps/web       Interfaz de Admin y Cliente
+apps/api       API, casos de uso y reglas de negocio
+packages/shared Contratos compartidos entre las aplicaciones
+docs           Material de análisis y diagramas
+```
+
+La implementación inicial prepara la separación y el arranque de las aplicaciones. Las reglas concretas de reserva, autenticación y persistencia se completarán al definir sus requisitos y el modelo de datos.
+
+## Pull requests
+
+Al crear un pull request, seguí el formato definido en el [template de pull request](.github/pull_request_template.md). Completá la descripción, los cambios realizados, el alcance y los próximos pasos si corresponde. Si una sección no aplica, indicá “No aplica” en lugar de eliminarla.
