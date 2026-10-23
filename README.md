@@ -57,3 +57,7 @@ docs           Material de análisis y diagramas
 ```
 
 La implementación inicial prepara la separación y el arranque de las aplicaciones. Las reglas concretas de reserva, autenticación y persistencia se completarán al definir sus requisitos y el modelo de datos.
+
+## Pull requests
+
+Al crear un pull request, seguí el formato definido en el [template de pull request](.github/pull_request_template.md). Completá la descripción, los cambios realizados, el alcance y los próximos pasos si corresponde. Si una sección no aplica, indicá “No aplica” en lugar de eliminarla.
