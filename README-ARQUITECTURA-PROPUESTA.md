@@ -34,6 +34,14 @@ La API se divide inicialmente en módulos:
 
 Cada módulo puede organizar controladores de entrada, casos de uso/servicios de aplicación, reglas del dominio y adaptadores de persistencia. Los controladores traducen HTTP a operaciones de aplicación; las reglas del negocio no dependen de la interfaz web. Las clases de dominio se incorporarán a partir de los casos de uso y el modelo de clases acordados, sin duplicarlas como tipos de transporte en el frontend.
 
+## Clases de dominio y modelos de interfaz
+
+- **Backend:** las clases que representan el negocio y aplican sus reglas viven en el módulo dueño de esa capacidad, dentro de `apps/api/src/modules/<módulo>/domain/`. Por ejemplo, `Reservation` pertenece a Reservas y `Service` a Servicios. Así cada clase queda junto a los casos de uso que la modifican.
+- **Frontend:** `apps/web/src/models/` contiene modelos propios de presentación, formularios o estado de pantalla. No es una segunda copia de las entidades del negocio ni decide reglas como si una reserva puede confirmarse.
+- **Compartido:** `packages/shared` publica contratos y tipos para intercambiar datos entre web y API. No aloja entidades internas ni clases de dominio.
+
+Aunque el proyecto se organiza con clases cuando aportan comportamiento, no hace falta convertir cada estructura de datos en una clase. Las clases del dominio se definirán al derivarlas de los casos de uso y del modelo acordado.
+
 ### Persistencia
 
 - Guarda usuarios y roles, servicios, disponibilidad y reservas.
@@ -105,15 +113,23 @@ La API debe comprobar permisos en cada operación. Ocultar una opción en la int
 agenda-app/
 ├─ apps/
 │  ├─ web/                         # aplicación Next.js
-│  │  └─ src/app/                  # rutas y presentación
+│  │  └─ src/
+│  │     ├─ app/                   # rutas y presentación
+│  │     └─ models/                # modelos propios de la interfaz
 │  └─ api/                         # aplicación NestJS
 │     └─ src/
 │        ├─ modules/
+│        │  ├─ README.md           # ubicación y límites de las clases
 │        │  ├─ auth/
+│        │  │  └─ domain/          # clases del módulo de identidad, si aplica
 │        │  ├─ users/
+│        │  │  └─ domain/          # clases de usuarios
 │        │  ├─ services/
+│        │  │  └─ domain/          # clases de servicios
 │        │  ├─ availability/
+│        │  │  └─ domain/          # clases de disponibilidad
 │        │  └─ reservations/
+│        │     └─ domain/          # clases de reservas
 │        └─ health/                # endpoint técnico de salud
 ├─ packages/
 │  └─ shared/                      # tipos y contratos públicos
