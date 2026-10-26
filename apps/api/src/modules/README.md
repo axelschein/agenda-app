@@ -1,16 +1,22 @@
-# Clases de dominio y aplicación
+# Módulos, clases y límites
 
-Las entidades del diagrama detallado de `AgendaApp/Diseno-clases-AgendaApp-MVP.drawio` viven en el backend, dentro del módulo que las posee:
+Cada módulo Nest representa una capacidad funcional y tiene un `*.module.ts` que Nest importa desde `AppModule`. Ese archivo declara un módulo de infraestructura de la aplicación, no una entidad del negocio. Por ejemplo, `UsersModule` agrupa la capacidad de usuarios; las clases de dominio son `Usuario`, `Cliente`, `Peluquero` y `Administrador`.
+
+Cada clase de dominio tiene un único módulo propietario bajo `domain/`. No se copia en otros módulos, Next ni `packages/shared`. Cuando otro módulo necesita una clase, se importa mediante el `index.ts` público del módulo propietario. Los `index.ts` actuales exportan las entidades del diagrama que ya tienen consumidores entre módulos.
+
+Las entidades no se registran como providers de Nest salvo que una necesidad técnica lo requiera. Los providers son controles de aplicación, repositorios/adaptadores y servicios técnicos. Se agregan carpetas `application/` e `infrastructure/` cuando existan responsabilidades implementadas que lo justifiquen; evitamos scaffolding vacío.
+
+## Clases del dominio
 
 - `users/domain/`: `Usuario` y sus especializaciones `Cliente`, `Peluquero` y `Administrador`.
 - `services/domain/`: `Servicio`.
-- `reservations/domain/`: `Turno` y sus asociaciones con cliente, peluquero y servicio.
-- `payments/domain/`: `Pago` y su asociación con turno.
-- `auth/`: `AutenticacionControl`, control de aplicación usado por el controlador HTTP de inicio/cierre de sesión.
+- `reservations/domain/`: `Turno`, asociado a Cliente, Peluquero y Servicio.
+- `payments/domain/`: `Pago`, asociado a Turno.
+- `auth/application/`: `AutenticacionControl`, control de aplicación del acceso. `auth/infrastructure/` contiene la sesión firmada y la lista de cuentas local.
 
-Los Boundary de interfaz (`AutenticacionUI`, `ReservaTurnoUI` y `TurnosUI`) corresponden a la aplicación Next. Los controladores HTTP de Nest son la frontera de la API. Las entidades de dominio no se duplican en `packages/shared`; allí se mantienen solo los contratos que cruzan la API.
+Las Boundary de interfaz (`AutenticacionUI`, `ReservaTurnoUI` y `TurnosUI`) corresponden a Next. Los controladores HTTP de Nest son la frontera de la API. `packages/shared` contiene contratos de intercambio, no entidades internas.
 
-La implementación actual de PP2-10 utiliza `AutenticacionControl`. Las entidades restantes representan el modelo del diagrama; no agregan reglas de reserva, transiciones de estado o persistencia que las fuentes dejan pendientes. El catálogo de controles de evolución (perfiles, catálogo administrativo, reportes, cobros, etc.) no se implementa como funcionalidad en PP2-10.
+La implementación actual de PP2-10 utiliza `AutenticacionControl`. Las otras entidades modelan clases del diagrama, sin reglas de reserva, transiciones de estado o persistencia que las fuentes dejan pendientes. `Peluquero` está modelado como usuario del dominio, pero no puede iniciar sesión en el MVP PP2-10.
 
 ## Autenticación local
 

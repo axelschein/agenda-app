@@ -1,8 +1,8 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import type { AuthenticatedUser } from "@agenda-app/shared";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { SESSION_TTL_SECONDS } from "./auth.constants.js";
-import { AutenticacionControl } from "./autenticacion.control.js";
+import { SESSION_TTL_SECONDS } from "../auth.constants.js";
+import { UserAllowlistService } from "./user-allowlist.service.js";
 
 interface SessionPayload extends AuthenticatedUser {
   expiresAt: number;
@@ -12,7 +12,7 @@ interface SessionPayload extends AuthenticatedUser {
 export class SessionService {
   private readonly secret: string;
 
-  constructor(private readonly autenticacion: AutenticacionControl) {
+  constructor(private readonly allowlist: UserAllowlistService) {
     this.secret = process.env.AUTH_SESSION_SECRET ?? "";
     if (this.secret.length < 32) {
       throw new InternalServerErrorException("AUTH_SESSION_SECRET debe tener al menos 32 caracteres.");
@@ -48,7 +48,7 @@ export class SessionService {
       if (typeof email !== "string" || typeof role !== "string" || typeof expiresAt !== "number") return null;
       if (expiresAt <= Math.floor(Date.now() / 1000)) return null;
       const user: AuthenticatedUser = { email, role: role as AuthenticatedUser["role"] };
-      return this.autenticacion.autorizar(user) ? user : null;
+      return this.allowlist.isAllowed(user) ? user : null;
     } catch {
       return null;
     }

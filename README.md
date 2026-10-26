@@ -12,7 +12,7 @@ La arquitectura y los límites entre componentes están documentados en [README-
 - **Paquete compartido:** `packages/shared` contiene contratos y tipos públicos que usan ambas aplicaciones. No contiene reglas de negocio ni acceso a datos.
 - **Persistencia:** solo la API accederá a la persistencia. La base de datos y el ORM quedan por definir.
 
-Esta opción mantiene un lenguaje y un conjunto de herramientas comunes. El backend se organiza como un monolito modular con módulos NestJS para identidad y acceso, usuarios, servicios, disponibilidad y reservas.
+Esta opción mantiene un lenguaje y un conjunto de herramientas comunes. El backend se organiza como un monolito modular con módulos NestJS para identidad y acceso, usuarios, servicios, disponibilidad, reservas y pagos.
 
 
 ## Requisitos
@@ -56,7 +56,7 @@ packages/shared Contratos compartidos entre las aplicaciones
 docs           Material de análisis y diagramas
 ```
 
-La implementación inicial prepara la separación y el arranque de las aplicaciones. Las reglas concretas de reserva, autenticación y persistencia se completarán al definir sus requisitos y el modelo de datos.
+PP2-10 implementa el inicio de sesión local para Administrador y Cliente. Las reservas, la administración de catálogo, los pagos y la persistencia se incorporarán al priorizar sus casos de uso y definir sus reglas y modelo de datos.
 
 ## Pull requests
 

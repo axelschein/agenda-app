@@ -1,4 +1,4 @@
-import type { Turno } from "../../reservations/domain/Turno.js";
+import type { Turno } from "../../reservations/index.js";
 
 export interface DatosPago {
   id: string;

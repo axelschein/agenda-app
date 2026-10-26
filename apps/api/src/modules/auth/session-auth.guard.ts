@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
-import { SessionService } from "./session.service.js";
+import { SessionService } from "./infrastructure/session.service.js";
 import type { AuthenticatedRequest } from "./current-user.decorator.js";
 
 @Injectable()

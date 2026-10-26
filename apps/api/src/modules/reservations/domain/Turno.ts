@@ -1,6 +1,6 @@
-import type { Cliente } from "../../users/domain/Cliente.js";
-import type { Peluquero } from "../../users/domain/Peluquero.js";
-import type { Servicio } from "../../services/domain/Servicio.js";
+import type { Cliente } from "../../users/index.js";
+import type { Peluquero } from "../../users/index.js";
+import type { Servicio } from "../../services/index.js";
 
 export interface DatosTurno {
   id: string;

@@ -12,12 +12,12 @@ import {
 import { USER_ROLES, type AuthResponse, type LoginCredentials, type UserRole } from "@agenda-app/shared";
 import type { Response } from "express";
 import { SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "./auth.constants.js";
-import { AutenticacionControl } from "./autenticacion.control.js";
+import { AutenticacionControl } from "./application/autenticacion.control.js";
 import { CurrentUser } from "./current-user.decorator.js";
 import { Roles } from "./roles.decorator.js";
 import { RolesGuard } from "./roles.guard.js";
 import { SessionAuthGuard } from "./session-auth.guard.js";
-import { SessionService } from "./session.service.js";
+import { SessionService } from "./infrastructure/session.service.js";
 
 @Controller("auth")
 export class AuthController {

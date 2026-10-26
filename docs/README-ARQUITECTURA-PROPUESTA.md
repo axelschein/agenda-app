@@ -1,160 +1,137 @@
-# Arquitectura propuesta
+# Arquitectura de AgendaApp
 
-## Objetivo y alcance
+## Enfoque
 
-Separar la experiencia de usuario, los casos de uso y las reglas del negocio, y el acceso a la persistencia para el MVP de AgendaApp. La arquitectura representa un monolito modular: una API central con módulos de dominio claros, sin añadir servicios distribuidos antes de necesitarlos.
+AgendaApp se organiza como un **monolito modular**: una aplicación web Next.js, una API NestJS y un paquete pequeño de contratos compartidos. La API es un solo proceso, dividido por capacidades del negocio. No hay microservicios ni una base de datos/ORM seleccionados.
 
-La arquitectura describe responsabilidades y límites. El stack elegido (Next.js + NestJS con TypeScript) se detalla en el [README principal](../README.md).
+El alcance funcional de la iteración actual es PP2-10: autenticación local de Administrador y Cliente. Las clases de dominio del diagrama MVP están modeladas en el backend; las reservas, pagos y demás casos de uso aún no tienen persistencia ni flujo operativo.
 
-## Componentes
+## Componentes y límites
 
-### Aplicación web
+- **`apps/web` (Next.js):** presentación y experiencia de usuario. Sus componentes pueden validar entradas para ayudar al usuario, pero la API valida identidad, permisos y reglas del negocio.
+- **`apps/api` (NestJS):** frontera HTTP, aplicación, dominio y futura persistencia. Es el único componente que accederá a la base de datos.
+- **`packages/shared`:** contratos de solicitudes/respuestas y tipos técnicos que cruzan la frontera HTTP. No contiene entidades del dominio ni reglas de negocio.
+- **`docs`:** requisitos, casos de uso y diagramas que justifican las clases y responsabilidades.
 
-- Presenta las funciones disponibles según el rol del usuario.
-- Permite al Cliente consultar servicios y disponibilidad, solicitar una reserva y revisar sus propias reservas.
-- Permite al Admin gestionar servicios, disponibilidad y reservas.
-- Se comunica con la API mediante contratos compartidos; no accede directamente a la persistencia.
-- Las validaciones de interfaz ayudan al usuario, pero la API vuelve a validar toda solicitud.
+En el modelo BCE, las Boundary de interfaz (`AutenticacionUI`, `ReservaTurnoUI`, `TurnosUI`) corresponden a Next. En Nest, los controladores HTTP reciben y responden solicitudes. Los controles de aplicación coordinan casos de uso; las entidades representan conceptos del dominio.
 
-### API de la aplicación
+## Qué significa un módulo Nest
 
-- Expone las operaciones que necesita la aplicación web.
-- Autentica a los usuarios y aplica autorización según los roles Admin y Cliente.
-- Coordina casos de uso y aplica las reglas del negocio.
-- Comprueba la disponibilidad al procesar una solicitud de reserva, para evitar aceptar horarios que ya no estén libres.
-- Es el único componente que accede a la persistencia.
+Un `@Module` de Nest configura un límite de dependencias: agrupa controladores y providers, e importa o exporta providers entre capacidades. Por ejemplo, `UsersModule` está declarado en `apps/api/src/modules/users/users.module.ts` y se importa desde `AppModule`.
 
-La API se divide inicialmente en módulos:
+`UsersModule` **no es una clase de negocio llamada `Users`**. Las clases de negocio son `Usuario`, `Cliente`, `Peluquero` y `Administrador`, ubicadas en `users/domain/`. Una entidad no tiene que aparecer en `providers`: los providers son objetos gestionados por Nest (controladores de aplicación, adaptadores y servicios técnicos); las entidades se crean como objetos del dominio cuando un caso de uso las necesita.
 
-- **Identidad y acceso:** autenticación y autorización.
-- **Usuarios:** datos de cuenta y rol.
-- **Servicios:** catálogo de servicios ofrecidos.
-- **Disponibilidad:** consulta y gestión de horarios.
-- **Reservas:** creación, consulta y gestión de reservas.
+`AppModule` es la raíz de composición de Nest: registra los módulos funcionales. No contiene reglas de negocio.
 
-Cada módulo puede organizar controladores de entrada, casos de uso/servicios de aplicación, reglas del dominio y adaptadores de persistencia. Los controladores traducen HTTP a operaciones de aplicación; las reglas del negocio no dependen de la interfaz web. Las clases de dominio se incorporarán a partir de los casos de uso y el modelo de clases acordados, sin duplicarlas como tipos de transporte en el frontend.
+## Responsabilidad de cada módulo
 
-## Clases de dominio y modelos de interfaz
+| Módulo | Clases/función dueña | Estado actual |
+|---|---|---|
+| `auth` | `AutenticacionControl`, sesiones, lista permitida y guards | Inicio, sesión actual y cierre de sesión implementados para `ADMIN` y `CLIENT`. |
+| `users` | `Usuario`, `Cliente`, `Peluquero`, `Administrador` | Módulo Nest declarado; entidades modeladas, sin casos de uso ni persistencia. |
+| `services` | `Servicio` y catálogo | Módulo Nest declarado; entidad modelada, sin catálogo operativo. |
+| `availability` | Consulta de horarios disponibles | Módulo Nest declarado; sin reglas ni adaptador todavía. |
+| `reservations` | `Turno`, reserva, consulta y cambios de estado | Módulo Nest declarado; entidad modelada, reglas y persistencia pendientes. |
+| `payments` | `Pago` y cobros | Módulo Nest declarado en esta estructura; entidad modelada, sin flujo de cobro. |
+| `health` | Estado técnico de la API | Endpoint `GET /api/v1/health`. |
 
-- **Backend:** las clases que representan el negocio y aplican sus reglas viven en el módulo dueño de esa capacidad, dentro de `apps/api/src/modules/<módulo>/domain/`. Por ejemplo, `Reservation` pertenece a Reservas y `Service` a Servicios. Así cada clase queda junto a los casos de uso que la modifican.
-- **Frontend:** `apps/web/src/models/` contiene modelos propios de presentación, formularios o estado de pantalla. No es una segunda copia de las entidades del negocio ni decide reglas como si una reserva puede confirmarse.
-- **Compartido:** `packages/shared` publica contratos y tipos para intercambiar datos entre web y API. No aloja entidades internas ni clases de dominio.
+Los módulos funcionales que todavía no exponen una función tienen una declaración mínima. No significa que sus casos de uso ya estén implementados. El rol `Peluquero` existe en el dominio, pero el acceso de ese rol no está habilitado en PP2-10.
 
-Aunque el proyecto se organiza con clases cuando aportan comportamiento, no hace falta convertir cada estructura de datos en una clase. Las clases del dominio se definirán al derivarlas de los casos de uso y del modelo acordado.
+## Dónde va cada clase
 
-### Persistencia
+Cada clase tiene **un solo módulo propietario**, el que implementa sus reglas y mantiene sus cambios:
 
-- Guarda usuarios y roles, servicios, disponibilidad y reservas.
-- Mantiene las relaciones e integridad de los datos.
-- El acceso queda detrás de adaptadores/repositorios internos de la API.
-- La base de datos, el modelo físico y la herramienta de persistencia se definirán después.
+- `Usuario`, `Cliente`, `Peluquero`, `Administrador` → `apps/api/src/modules/users/domain/`.
+- `Servicio` → `apps/api/src/modules/services/domain/`.
+- `Turno` → `apps/api/src/modules/reservations/domain/`.
+- `Pago` → `apps/api/src/modules/payments/domain/`.
+- `AutenticacionControl` → `auth/application/`, como control de aplicación del inicio de sesión.
 
-### Contratos compartidos
+No se crean copias de `Usuario` o `Turno` en otros módulos, en Next o en `packages/shared`. Cuando otra clase de dominio necesita una clase dueña de otro módulo, la importa como tipo a través del punto público de ese módulo (`users/index.ts`, `services/index.ts`, `reservations/index.ts`). Los cambios y reglas siguen siendo responsabilidad del módulo dueño. Evitamos dependencias circulares; si aparecen, revisamos la asociación o introducimos un contrato explícito.
 
-- Publican los tipos y acuerdos de comunicación que necesitan la web y la API.
-- Pueden incluir contratos de solicitudes y respuestas, roles y esquemas de validación compartidos.
-- No contienen reglas del negocio, entidades internas ni acceso a datos.
+Las subclases de usuario reutilizan los datos comunes definidos en `Usuario`. Las asociaciones de `Turno` y `Pago` conservan las clases del modelo; no se duplican sus atributos para representarlas. Los tipos de `packages/shared` describen el formato de intercambio HTTP y pueden diferir de las entidades internas.
 
-## Diagrama de componentes
+La lista permitida de PP2-10 solo tiene `email`, `role` y `passwordHash`, y funciona como adaptador local de desarrollo. En esta iteración `AutenticacionControl` depende directamente de `UserAllowlistService`; al incorporar persistencia, se extraerá un puerto de aplicación para desacoplar el caso de uso del adaptador. La sesión transporta una identidad autenticada mínima de `packages/shared`, todavía no una instancia completa de `Usuario`, porque el dominio también define `id`, `nombre` y `telefono`. La integración de cuentas con las entidades de usuario queda pendiente de persistencia y datos de perfil.
+
+## Estructura y convención para crecer
+
+```text
+apps/api/src/
+├─ app.module.ts                  # composición de módulos
+├─ health/                        # endpoint técnico
+└─ modules/
+   ├─ auth/
+   │  ├─ auth.module.ts
+   │  ├─ auth.controller.ts             # frontera HTTP
+   │  ├─ application/
+   │  │  └─ autenticacion.control.ts    # coordinación del caso de uso
+   │  ├─ infrastructure/
+   │  │  ├─ session.service.ts          # cookie y sesión firmada
+   │  │  └─ user-allowlist.service.ts   # cuentas locales de prueba
+   │  ├─ roles.guard.ts                 # autorización HTTP
+   │  └─ session-auth.guard.ts
+   ├─ users/
+   │  ├─ users.module.ts          # módulo Nest, no entidad Users
+   │  ├─ index.ts                 # API pública para otros módulos
+   │  └─ domain/                  # clases de negocio propietarias
+   ├─ services/
+   │  ├─ services.module.ts
+   │  ├─ index.ts
+   │  └─ domain/
+   ├─ availability/
+   ├─ reservations/
+   │  ├─ reservations.module.ts
+   │  ├─ index.ts
+   │  └─ domain/
+   └─ payments/
+      ├─ payments.module.ts
+      ├─ index.ts
+      └─ domain/
+```
+
+Dentro de cada módulo, agregamos carpetas solo al implementar esa responsabilidad:
+
+- `domain/`: entidades y reglas del negocio propias del módulo.
+- `application/`: controles/servicios que coordinan un caso de uso.
+- `infrastructure/`: repositorios, ORM y adaptadores externos.
+- controladores HTTP en el módulo (o en `http/` si su cantidad lo justifica).
+
+No se crean clases por rutina: derivamos entidades y operaciones de los casos de uso, requisitos y diagramas acordados. DTOs, formularios y modelos de pantalla no son entidades de dominio.
+
+## Dependencias
 
 ```mermaid
 flowchart LR
-    Cliente[Cliente]
-    Admin[Admin]
-    Web[Aplicación web\nNext.js]
-    Shared[Contratos compartidos]
-    API[API\nNestJS]
-    Auth[Identidad y acceso]
-    Users[Usuarios]
-    Services[Servicios]
-    Availability[Disponibilidad]
-    Reservations[Reservas]
-    Persistence[Adaptadores de persistencia]
-    Database[(Base de datos\npor definir)]
-
-    Cliente --> Web
-    Admin --> Web
-    Web <-->|HTTP / JSON| API
-    Web -. consume .-> Shared
-    API -. consume .-> Shared
-    API --> Auth
-    API --> Users
-    API --> Services
-    API --> Availability
-    API --> Reservations
-    Auth --> Persistence
-    Users --> Persistence
-    Services --> Persistence
-    Availability --> Persistence
-    Reservations --> Persistence
-    Persistence --> Database
+    Web[apps/web\nNext.js] -->|HTTP JSON| API[NestJS API]
+    Web -. tipos de intercambio .-> Shared[packages/shared]
+    API -. DTOs y contratos .-> Shared
+    API --> Auth[auth]
+    API --> Users[users]
+    API --> Services[services]
+    API --> Availability[availability]
+    API --> Reservations[reservations]
+    API --> Payments[payments]
+    Reservations -. importa tipos públicos .-> Users
+    Reservations -. importa tipos públicos .-> Services
+    Payments -. importa tipo público .-> Reservations
+    API --> Infra[Adaptadores de persistencia futuros]
+    Infra --> DB[(Base de datos por definir)]
 ```
 
-## Roles y permisos
+Reglas de dependencia:
 
-- **Cliente:** consulta disponibilidad, solicita una reserva y consulta sus propias reservas.
-- **Admin:** administra servicios y disponibilidad, y consulta y gestiona reservas.
+1. La web se comunica con la API por HTTP y consume contratos públicos; no importa clases de `apps/api`.
+2. Un módulo no accede a tablas ni a archivos internos de otro módulo.
+3. Un módulo solo comparte sus clases públicas intencionales mediante su `index.ts`; evita los imports directos a `otro-modulo/domain/archivo`.
+4. Las dependencias entre módulos avanzan hacia interfaces públicas y no forman ciclos. La infraestructura implementará puertos definidos por la aplicación cuando se elija persistencia.
+5. No trasladamos entidades a `packages/shared` para reutilizarlas entre frontend y backend: allí compartimos formatos de comunicación, no el modelo interno.
 
-La API debe comprobar permisos en cada operación. Ocultar una opción en la interfaz no protege una acción.
+## Próximas decisiones
 
-## Flujo básico de reserva
+- Definir transiciones y permisos de estados, cancelaciones y rechazos de turnos.
+- Acordar disponibilidad, duración y consistencia/concurrencia de reservas.
+- Elegir base de datos y persistencia y resolver cómo se materializa `Usuario` desde las cuentas autenticadas.
+- Implementar los controles del catálogo completo de casos de uso conforme al alcance priorizado.
+- Confirmar exclusividad/coexistencia de roles, origen del rating y reglas de pago.
 
-1. El Cliente selecciona un servicio y pide consultar horarios.
-2. La web solicita disponibilidad a la API.
-3. El módulo de disponibilidad consulta los datos y devuelve las opciones libres.
-4. El Cliente elige un horario y envía la solicitud de reserva.
-5. La API verifica identidad, permiso, formato y disponibilidad actual.
-6. Si el horario sigue disponible, el módulo de reservas registra la solicitud y devuelve su estado. Si dejó de estar disponible, la API informa el conflicto y permite consultar otros horarios.
-7. El Cliente consulta el estado de su reserva; el Admin puede verla y gestionarla según sus permisos.
-
-## Scaffolding del monorepo
-
-```text
-agenda-app/
-├─ apps/
-│  ├─ web/                         # aplicación Next.js
-│  │  └─ src/
-│  │     ├─ app/                   # rutas y presentación
-│  │     └─ models/                # modelos propios de la interfaz
-│  └─ api/                         # aplicación NestJS
-│     └─ src/
-│        ├─ modules/
-│        │  ├─ README.md           # ubicación y límites de las clases
-│        │  ├─ auth/
-│        │  │  └─ domain/          # clases del módulo de identidad, si aplica
-│        │  ├─ users/
-│        │  │  └─ domain/          # clases de usuarios
-│        │  ├─ services/
-│        │  │  └─ domain/          # clases de servicios
-│        │  ├─ availability/
-│        │  │  └─ domain/          # clases de disponibilidad
-│        │  └─ reservations/
-│        │     └─ domain/          # clases de reservas
-│        └─ health/                # endpoint técnico de salud
-├─ packages/
-│  └─ shared/                      # tipos y contratos públicos
-├─ docs/
-│  ├─ README-ARQUITECTURA-PROPUESTA.md
-│  ├─ casos-de-uso/
-│  └─ diagramas/
-├─ package.json                    # workspaces y comandos comunes de npm
-├─ .nvmrc                          # versión de Node.js para NVM
-├─ tsconfig.base.json
-├─ README.md                       # stack elegido y cómo iniciar
-```
-
-## Límites de dependencias
-
-- `apps/web` depende de los contratos compartidos y llama a la API; no conoce la base de datos.
-- `apps/api` depende de los contratos públicos y contiene la lógica de aplicación y dominio.
-- Los módulos de negocio usan adaptadores de persistencia internos; ningún otro componente accede directamente al almacenamiento.
-- `packages/shared` es una frontera de contratos, no un lugar para acumular lógica del backend.
-- `docs` conserva requisitos, casos de uso y diagramas para trazar las clases y reglas a implementar.
-
-## Decisiones pendientes
-
-- Definir autenticación, sesiones y recuperación de acceso.
-- Acordar estados de reserva, cancelaciones y reglas de modificación.
-- Elegir base de datos y estrategia de persistencia.
-- Precisar si las reservas quedan confirmadas automáticamente o requieren confirmación del Admin.
-- Derivar el modelo de clases definitivo desde los casos de uso y artefactos académicos del proyecto.
+Las clases y decisiones de dominio deben mantenerse trazadas al Modelo de Diseño, requisitos, casos de uso y diagramas fuente de AgendaApp que se conservan en el espacio de trabajo PP2.

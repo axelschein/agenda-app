@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import type { AuthenticatedUser, LoginCredentials } from "@agenda-app/shared";
-import { UserAllowlistService } from "./user-allowlist.service.js";
+import { UserAllowlistService } from "../infrastructure/user-allowlist.service.js";
 
 /** Control de aplicación que autentica y valida la identidad autorizada. */
 @Injectable()
