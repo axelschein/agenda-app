@@ -52,7 +52,7 @@ export class UserAllowlistService {
       const email = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
       const role = candidate.role;
       const passwordHash = candidate.passwordHash;
-      if (!email.includes("@") || typeof passwordHash !== "string" || !isPasswordHash(passwordHash)) {
+      if (!email.includes("@") || typeof passwordHash !== "string" || parsePasswordHash(passwordHash) === null) {
         throw new InternalServerErrorException("Cada cuenta permitida requiere email y passwordHash scrypt válidos.");
       }
       if (typeof role !== "string" || !USER_ROLES.includes(role as UserRole)) {
@@ -67,15 +67,28 @@ export class UserAllowlistService {
   }
 }
 
-function isPasswordHash(value: string): boolean {
-  const [algorithm, salt, hash] = value.split("$");
-  return algorithm === "scrypt" && typeof salt === "string" && salt.length >= 16 && typeof hash === "string" && hash.length >= 32;
+function parsePasswordHash(value: string): { salt: Buffer; hash: Buffer } | null {
+  const parts = value.split("$");
+  if (parts.length !== 3 || parts[0] !== "scrypt") return null;
+
+  const encodedSalt = parts[1];
+  const encodedHash = parts[2];
+  if (!encodedSalt || !encodedHash) return null;
+
+  const salt = decodeBase64Url(encodedSalt, 16);
+  const hash = decodeBase64Url(encodedHash, 64);
+  return salt && hash ? { salt, hash } : null;
+}
+
+function decodeBase64Url(value: string, expectedLength: number): Buffer | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  const decoded = Buffer.from(value, "base64url");
+  return decoded.length === expectedLength && decoded.toString("base64url") === value ? decoded : null;
 }
 
 async function verifyPassword(password: string, encodedHash: string): Promise<boolean> {
-  const [, salt, hash] = encodedHash.split("$");
-  if (!salt || !hash) return false;
-  const expected = Buffer.from(hash, "base64url");
-  const actual = (await scryptAsync(password, Buffer.from(salt, "base64url"), expected.length)) as Buffer;
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+  const parsed = parsePasswordHash(encodedHash);
+  if (!parsed) return false;
+  const actual = (await scryptAsync(password, parsed.salt, 64)) as Buffer;
+  return timingSafeEqual(parsed.hash, actual);
 }
