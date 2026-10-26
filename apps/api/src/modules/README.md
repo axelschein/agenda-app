@@ -14,7 +14,7 @@ La implementación actual de PP2-10 utiliza `AutenticacionControl`. Las entidade
 
 ## Autenticación local
 
-El módulo `auth` permite iniciar y cerrar sesión para cuentas `ADMIN` y `CLIENT` declaradas en `apps/api/.env`. Copiá `apps/api/.env.example` a `apps/api/.env`, generá un hash con `npm run auth:hash-password --workspace=@agenda-app/api` e incluí las cuentas en `AUTH_USERS_JSON` con los campos `email`, `role` y `passwordHash`. El hash usa scrypt; no guardes contraseñas en texto plano.
+El módulo `auth` permite iniciar y cerrar sesión para cuentas `ADMIN` y `CLIENT` declaradas en el archivo `.env` de la raíz del repositorio. Si no existe, copiá `.env.example` a `.env`, generá un hash con `npm run auth:hash-password --workspace=@agenda-app/api` e incluí las cuentas en `AUTH_USERS_JSON` con los campos `email`, `role` y `passwordHash`. El hash usa scrypt; no guardes contraseñas en texto plano.
 
 La API firma una cookie de sesión `HttpOnly` con una clave definida en `AUTH_SESSION_SECRET`. La sesión dura ocho horas y la API vuelve a comprobar que el usuario y rol sigan en la lista permitida. `RolesGuard` y el decorador `@Roles(...)` quedan disponibles para proteger los controladores de cada función cuando se implementen.
 
