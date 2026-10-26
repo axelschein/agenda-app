@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "npm run build --workspace=@agenda-app/shared && nest build",
-    "start": "node dist/main.js",
-    "start:dev": "npm run build --workspace=@agenda-app/shared && nest start --watch"
+    "start": "node --env-file=.env dist/main.js",
+    "start:dev": "npm run build --workspace=@agenda-app/shared && node --env-file=.env ../../node_modules/@nestjs/cli/bin/nest.js start --watch",
+    "auth:hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "@agenda-app/shared": "0.1.0",
