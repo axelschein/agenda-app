@@ -13,6 +13,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/auth/me`, { credentials: "include" })
@@ -55,11 +56,20 @@ export default function HomePage() {
   }
 
   async function handleLogout() {
-    await fetch(`${API_URL}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    }).catch(() => undefined);
-    setUser(null);
+    setError("");
+    setLoggingOut(true);
+    try {
+      const response = await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("No se pudo cerrar la sesión.");
+      setUser(null);
+    } catch {
+      setError("No se pudo cerrar sesión. Intentá de nuevo.");
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   if (loading) {
@@ -75,7 +85,7 @@ export default function HomePage() {
               <p className="eyebrow">AgendaApp · {user.role === "ADMIN" ? "Administración" : "Cliente"}</p>
               <h1 id="page-title">Hola, {user.email}</h1>
             </div>
-            <button className="button button-secondary" onClick={handleLogout}>Cerrar sesión</button>
+            <button className="button button-secondary" disabled={loggingOut} onClick={handleLogout}>{loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}</button>
           </header>
           {user.role === "ADMIN" ? (
             <div className="role-grid" aria-label="Funciones de administración">
@@ -89,6 +99,7 @@ export default function HomePage() {
               <RoleCard label="Tu agenda" title="Mis reservas" description="Revisá el estado de tus reservas." />
             </div>
           )}
+          {error && <p className="error-message" role="alert">{error}</p>}
           <p className="status-note">Estas tarjetas muestran las funciones previstas para tu rol. Por ahora, podés iniciar y cerrar sesión.</p>
         </section>
       </main>
