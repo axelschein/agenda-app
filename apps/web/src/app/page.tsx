@@ -89,7 +89,7 @@ export default function HomePage() {
               <RoleCard label="Tu agenda" title="Mis reservas" description="Revisá el estado de tus reservas." />
             </div>
           )}
-          <p className="status-note">Las funciones se habilitan según el rol de esta cuenta.</p>
+          <p className="status-note">Estas tarjetas muestran las funciones previstas para tu rol. Por ahora, podés iniciar y cerrar sesión.</p>
         </section>
       </main>
     );

@@ -35,6 +35,14 @@ Instalá las dependencias desde la raíz del repositorio:
 npm install
 ```
 
+Creá el archivo de configuración local en la raíz del repositorio:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+En `.env`, reemplazá `AUTH_SESSION_SECRET` por una clave aleatoria de al menos 32 caracteres y agregá las cuentas autorizadas a `AUTH_USERS_JSON`. Para generar el `passwordHash` de cada cuenta, ejecutá `npm run auth:hash-password --workspace=@agenda-app/api`. El ejemplo contiene una lista vacía (`[]`): con esa lista la API inicia, pero nadie puede ingresar. La estructura de cada cuenta está explicada en `.env.example`.
+
 Iniciá cada aplicación en una terminal separada:
 
 ```bash
