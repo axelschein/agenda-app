@@ -2,14 +2,14 @@
 
 ## Enfoque
 
-AgendaApp se organiza como un **monolito modular**: una aplicación web Next.js, una API NestJS y un paquete pequeño de contratos compartidos. La API es un solo proceso, dividido por capacidades del negocio. No hay microservicios ni una base de datos/ORM seleccionados.
+AgendaApp se organiza como un **monolito modular**: una aplicación web Next.js, una API NestJS y un paquete pequeño de contratos compartidos. La API es un solo proceso, dividido por capacidades del negocio. No hay microservicios. PP2-6 utiliza SQLite local, sin ORM; el motor definitivo de despliegue sigue pendiente.
 
-El alcance funcional de la iteración actual es PP2-10: autenticación local de Administrador y Cliente. Las clases de dominio del diagrama MVP están modeladas en el backend; las reservas, pagos y demás casos de uso aún no tienen persistencia ni flujo operativo.
+La iteración incluye PP2-10 (autenticación local) y PP2-6 (reserva guiada y jornadas laborales). La persistencia parcial de CU09 se documenta en [PP2-6](casos-de-uso/PP2-6-reservar-turno.md). Las clases del MODP no se consideran automáticamente materializadas por esta implementación; los perfiles completos y pagos permanecen pendientes.
 
 ## Componentes y límites
 
 - **`apps/web` (Next.js):** presentación y experiencia de usuario. Sus componentes pueden validar entradas para ayudar al usuario, pero la API valida identidad, permisos y reglas del negocio.
-- **`apps/api` (NestJS):** frontera HTTP, aplicación, dominio y futura persistencia. Es el único componente que accederá a la base de datos.
+- **`apps/api` (NestJS):** frontera HTTP, aplicación, dominio y persistencia local. Es el único componente que accederá a la base de datos.
 - **`packages/shared`:** contratos de solicitudes/respuestas y tipos técnicos que cruzan la frontera HTTP. No contiene entidades del dominio ni reglas de negocio.
 - **`docs`:** requisitos, casos de uso y diagramas que justifican las clases y responsabilidades.
 
@@ -28,10 +28,10 @@ Un `@Module` de Nest configura un límite de dependencias: agrupa controladores 
 | Módulo | Clases/función dueña | Estado actual |
 |---|---|---|
 | `auth` | `AutenticacionControl`, sesiones, lista permitida y guards | Inicio, sesión actual y cierre de sesión implementados para `ADMIN` y `CLIENT`. |
-| `users` | `Usuario`, `Cliente`, `Peluquero`, `Administrador` | Módulo Nest declarado; entidades modeladas, sin casos de uso ni persistencia. |
-| `services` | `Servicio` y catálogo | Módulo Nest declarado; entidad modelada, sin catálogo operativo. |
-| `availability` | Consulta de horarios disponibles | Módulo Nest declarado; sin reglas ni adaptador todavía. |
-| `reservations` | `Turno`, reserva, consulta y cambios de estado | Módulo Nest declarado; entidad modelada, reglas y persistencia pendientes. |
+| `users` | `Usuario`, `Cliente`, `Peluquero`, `Administrador` | Entidades modeladas; PersonalControl consulta personal precargado. Perfiles completos pendientes. |
+| `services` | `Servicio` y catálogo | Entidad modelada y consulta de catálogo precargado para CU09. |
+| `availability` | Consulta de horarios disponibles | AgendaControl calcula horarios desde jornadas semanales configuradas por Admin, duración y ocupación persistida. |
+| `reservations` | `Turno`, reserva, consulta y cambios de estado | ReservaTurnoControl registra Pendiente en SQLite, protege intervalos e idempotencia y devuelve recibos propios. Otras transiciones pendientes. |
 | `payments` | `Pago` y cobros | Módulo Nest declarado en esta estructura; entidad modelada, sin flujo de cobro. |
 | `health` | Estado técnico de la API | Endpoint `GET /api/v1/health`. |
 
@@ -114,24 +114,28 @@ flowchart LR
     Reservations -. importa tipos públicos .-> Users
     Reservations -. importa tipos públicos .-> Services
     Payments -. importa tipo público .-> Reservations
-    API --> Infra[Adaptadores de persistencia futuros]
+    API --> Infra[AgendaDatabase · SQLite local]
     Infra --> DB[(Base de datos por definir)]
 ```
 
 Reglas de dependencia:
 
 1. La web se comunica con la API por HTTP y consume contratos públicos; no importa clases de `apps/api`.
-2. Un módulo no accede a tablas ni a archivos internos de otro módulo.
+2. Cada módulo escribe solo sus tablas e importa las interfaces públicas de los demás módulos. Para calcular disponibilidad, agenda consume la proyección de lectura `ocupacion_agenda` que publica la infraestructura, sin datos personales de clientes.
 3. Un módulo solo comparte sus clases públicas intencionales mediante su `index.ts`; evita los imports directos a `otro-modulo/domain/archivo`.
-4. Las dependencias entre módulos avanzan hacia interfaces públicas y no forman ciclos. La infraestructura implementará puertos definidos por la aplicación cuando se elija persistencia.
+4. Las dependencias entre módulos avanzan hacia interfaces públicas y no forman ciclos. AgendaDatabase provee el adaptador local. La extracción de puertos/repositorios por módulo queda documentada para cambiar de motor.
 5. No trasladamos entidades a `packages/shared` para reutilizarlas entre frontend y backend: allí compartimos formatos de comunicación, no el modelo interno.
 
 ## Próximas decisiones
 
 - Definir transiciones y permisos de estados, cancelaciones y rechazos de turnos.
-- Acordar disponibilidad, duración y consistencia/concurrencia de reservas.
-- Elegir base de datos y persistencia y resolver cómo se materializa `Usuario` desde las cuentas autenticadas.
+- Extender la disponibilidad a excepciones y ausencias; PP2-6 ya calcula duración completa y protege reservas simultáneas.
+- Elegir el motor definitivo de despliegue y resolver cómo se materializa `Usuario` desde las cuentas autenticadas; SQLite local ya cubre CU09.
 - Implementar los controles del catálogo completo de casos de uso conforme al alcance priorizado.
 - Confirmar exclusividad/coexistencia de roles, origen del rating y reglas de pago.
 
 Las clases y decisiones de dominio deben mantenerse trazadas al Modelo de Diseño, requisitos, casos de uso y diagramas fuente de AgendaApp que se conservan en el espacio de trabajo PP2.
+
+## Persistencia local incorporada en PP2-6
+
+AgendaDatabase es el adaptador compartido de SQLite. Los módulos conservan la propiedad del catálogo, personal, agenda y reserva; publican controles por sus index.ts y no duplican entidades en Next/shared. Los contratos de intercambio están en packages/shared. La escritura de la reserva, vinculación técnica del Cliente y auditoría forman una transacción. La interfaz Next nunca recibe acceso a SQLite. El detalle del esquema parcial, sus compromisos y decisiones pendientes están en [PP2-6](casos-de-uso/PP2-6-reservar-turno.md).

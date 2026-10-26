@@ -8,7 +8,13 @@ import { UserAllowlistService } from "./infrastructure/user-allowlist.service.js
 
 @Module({
   controllers: [AuthController],
-  providers: [AutenticacionControl, SessionService, SessionAuthGuard, RolesGuard, UserAllowlistService],
-  exports: [SessionAuthGuard, RolesGuard],
+  providers: [
+    AutenticacionControl,
+    SessionService,
+    SessionAuthGuard,
+    RolesGuard,
+    UserAllowlistService,
+  ],
+  exports: [SessionAuthGuard, RolesGuard, SessionService],
 })
 export class AuthModule {}

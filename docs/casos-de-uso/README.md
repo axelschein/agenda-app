@@ -1,3 +1,3 @@
 # Casos de uso
 
-Agregar aquí los casos de uso del MVP y mantener sus identificadores y nombres alineados con los materiales de análisis del proyecto.
+- [PP2-6 — Reservar un turno](PP2-6-reservar-turno.md): fuentes vigentes, CU/RD/RNF, decisiones de implementación, API, persistencia y validación.
