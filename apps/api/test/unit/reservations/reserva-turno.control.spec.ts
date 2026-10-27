@@ -109,11 +109,12 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
     precioRevisado: 6000,
     duracionRevisada: 60,
   });
-  it("genera el resumen con los datos del catálogo", () => {
+  it("genera el resumen con un servicio y el bloque configurable de la agenda", () => {
     expect(control.generarResumen(selection)).toMatchObject({
       servicio,
       peluquero,
       total: 6000,
+      duracionBloqueMinutos: 60,
     });
   });
   it("avisa si el horario dejó de estar disponible", () => {
@@ -128,6 +129,7 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
     { fecha: "2099-02-30" },
     { horaInicio: "25:00" },
     { servicioId: "" },
+    { servicioId: ["corte", "barba"] },
   ])("rechaza una selección inválida: %o", (change) => {
     expect(() => control.generarResumen({ ...selection, ...change })).toThrow(
       BadRequestException,

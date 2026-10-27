@@ -4,7 +4,7 @@
 
 AgendaApp se organiza como un **monolito modular**: una aplicación web Next.js, una API NestJS y un paquete pequeño de contratos compartidos. La API es un solo proceso, dividido por capacidades del negocio. No hay microservicios. PP2-6 utiliza SQLite local, sin ORM; el motor definitivo de despliegue sigue pendiente.
 
-La iteración incluye PP2-10 (autenticación local) y PP2-6 (reserva guiada y jornadas laborales). La persistencia parcial de CU09 se documenta en [PP2-6](casos-de-uso/PP2-6-reservar-turno.md). Las clases del MODP no se consideran automáticamente materializadas por esta implementación; los perfiles completos y pagos permanecen pendientes.
+La implementación actual incluye PP2-10 (autenticación local), PP2-6 (reserva guiada y jornadas laborales) y PP2-11 (gestión del catálogo). La persistencia parcial de CU09 se documenta en [PP2-6](casos-de-uso/PP2-6-reservar-turno.md) y la gestión del catálogo en [PP2-11](casos-de-uso/PP2-11-gestionar-catalogo-servicios.md). PP2-12 completa la presentación accesible de la selección única de servicio y se documenta en [PP2-12](casos-de-uso/PP2-12-seleccionar-servicio.md). Las clases del MODP no se consideran automáticamente materializadas por esta implementación; los perfiles completos y pagos permanecen pendientes.
 
 ## Componentes y límites
 
@@ -29,7 +29,7 @@ Un `@Module` de Nest configura un límite de dependencias: agrupa controladores 
 |---|---|---|
 | `auth` | `AutenticacionControl`, sesiones, lista permitida y guards | Inicio, sesión actual y cierre de sesión implementados para `ADMIN` y `CLIENT`. |
 | `users` | `Usuario`, `Cliente`, `Peluquero`, `Administrador` | Entidades modeladas; PersonalControl consulta personal precargado. Perfiles completos pendientes. |
-| `services` | `Servicio` y catálogo | Entidad modelada y consulta de catálogo precargado para CU09. |
+| `services` | `Servicio` y catálogo | Entidad y persistencia; consulta de activos para reservas, ABM Admin y baja lógica con reactivación (PP2-11). |
 | `availability` | Consulta de horarios disponibles | AgendaControl calcula horarios desde jornadas semanales configuradas por Admin, duración y ocupación persistida. |
 | `reservations` | `Turno`, reserva, consulta y cambios de estado | ReservaTurnoControl registra Pendiente en SQLite, protege intervalos e idempotencia y devuelve recibos propios. Otras transiciones pendientes. |
 | `payments` | `Pago` y cobros | Módulo Nest declarado en esta estructura; entidad modelada, sin flujo de cobro. |
