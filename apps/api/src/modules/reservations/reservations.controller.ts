@@ -18,7 +18,7 @@ export class ReservationsController {
     private readonly personal: PersonalControl,
     private readonly agenda: AgendaControl,
   ) {}
-  @Get("services") servicios() {
+  @Get("services") @Roles("CLIENT", "ADMIN") servicios() {
     return this.catalogo.consultar();
   }
   @Get("barbers") @Roles("CLIENT", "ADMIN") peluqueros() {

@@ -65,7 +65,7 @@ Las rutas llevan prefijo /api/v1. Requieren la cookie de sesión existente.
 
 | Ruta | Rol | Resultado |
 | --- | --- | --- |
-| GET /reservations/services | Cliente | Servicios disponibles. |
+| GET /reservations/services | Cliente, Admin | Servicios disponibles. |
 | GET /reservations/barbers | Cliente, Admin | Identificador y nombre del personal. |
 | GET /reservations/availability?servicioId=…&peluqueroId=…&fecha=AAAA-MM-DD | Cliente | Horarios calculados y zona horaria. |
 | POST /reservations/summary | Cliente | Resumen actualizado de la selección. |
@@ -87,3 +87,7 @@ Verificación realizada: 22 pruebas unitarias de Jest y cinco de integración HT
 Verificación reproducible: npm test (unitarias); npm run test:integration (integración); npm run test:typecheck --workspace=@agenda-app/api (tipos sin emisión). npm run build es una operación independiente y no forma parte de los scripts de prueba. Jest y ts-jest ejecutan los fuentes de src; moduleNameMapper resuelve @agenda-app/shared desde sus fuentes. No se importan archivos de dist, no hay workers con código evaluado ni rutas de archivos mediante new URL.
 
 Las unitarias inyectan mocks con @nestjs/testing y jest.fn; no levantan servidores ni abren bases. Las de integración usan Supertest con cuentas sintéticas y SQLite temporal por escenario, restauran las variables de entorno y cierran las conexiones. No cargan .env ni usan datos reales. La configuración ESM sobre Node 22 requiere --experimental-vm-modules, según la [documentación de Jest](https://jestjs.io/docs/ecmascript-modules). La compilación conserva su comando separado; en Windows PowerShell 5 puede requerir npm --script-shell=cmd.exe run build.
+
+## Ajustes tras la prueba del usuario
+
+La tarjeta Servicios del Admin abre el catálogo de consulta (RD03.04–RD03.05); no habilita ABM. La franja laboral nueva se propone inicialmente de 09:00 a 10:00 para reducir la carga manual. Es un valor inicial editable de jornada, no una modificación de la duración de la reserva: cada servicio conserva su duración estimada. La propuesta de fijar todas las reservas en 60 minutos requiere distinguirse de este ajuste de interfaz y permanece pendiente de aclaración.

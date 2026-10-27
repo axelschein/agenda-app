@@ -107,8 +107,9 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
         <h2 id="hours-title">Horarios laborales</h2>
       </header>
       <p className="form-help">
-        Configurá las franjas semanales por profesional. Podés separar mañana y
-        tarde. Los días sin franjas no se ofrecen para reservar.
+        Configurá la jornada semanal por profesional. Cada franja nueva comienza
+        con una hora. Podés separar mañana y tarde. Los días sin franjas no se
+        ofrecen para reservar.
       </p>
       <label className="booking-label date-field">
         Peluquero/a
@@ -193,11 +194,11 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
             onClick={() =>
               setWindows((ws) => [
                 ...ws,
-                { dia: 1, inicio: "09:00", fin: "18:00" },
+                { dia: 1, inicio: "09:00", fin: "10:00" },
               ])
             }
           >
-            Agregar franja
+            Agregar franja de 1 hora
           </button>
           <button
             className="button booking-primary"
@@ -207,8 +208,10 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
             {saving ? "Guardando…" : "Guardar horarios"}
           </button>
           <p className="form-help">
-            Cambiar la jornada no cancela turnos ya registrados. El personal y
-            catálogo se precargan para este MVP.
+            La jornada indica cuándo trabaja el profesional. Cada reserva ocupa
+            la duración del servicio, no la jornada completa. Cambiar la jornada
+            no cancela turnos ya registrados. El personal y catálogo se
+            precargan para este MVP.
           </p>
         </>
       )}

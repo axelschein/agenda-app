@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { AuthResponse, AuthenticatedUser } from "@agenda-app/shared";
 
+import { CatalogoServicios } from "../components/catalogo-servicios";
 import { ReservaTurno } from "../components/reserva-turno";
 import { HorariosLaborales } from "../components/horarios-laborales";
 
@@ -11,7 +12,9 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 export default function HomePage() {
-  const [view, setView] = useState<"home" | "booking" | "hours">("home");
+  const [view, setView] = useState<"home" | "booking" | "hours" | "services">(
+    "home",
+  );
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -116,13 +119,18 @@ export default function HomePage() {
             <ReservaTurno onClose={() => setView("home")} />
           ) : view === "hours" && user.role === "ADMIN" ? (
             <HorariosLaborales onClose={() => setView("home")} />
+          ) : view === "services" && user.role === "ADMIN" ? (
+            <CatalogoServicios onClose={() => setView("home")} />
           ) : user.role === "ADMIN" ? (
             <div className="role-grid" aria-label="Funciones de administración">
-              <RoleCard
-                label="Administración"
-                title="Servicios"
-                description="Gestioná los servicios ofrecidos."
-              />
+              <button
+                className="role-card role-card-action"
+                onClick={() => setView("services")}
+              >
+                <span className="role-label">Administración</span>
+                <h2>Servicios</h2>
+                <p>Consultá los servicios, precios y duraciones.</p>
+              </button>
               <button
                 className="role-card role-card-action"
                 onClick={() => setView("hours")}
@@ -163,7 +171,7 @@ export default function HomePage() {
             <p className="status-note">
               {user.role === "CLIENT"
                 ? "Entrá en Reservar turno para hacer una reserva o consultar tus turnos registrados."
-                : "Disponibilidad permite configurar horarios laborales. Las demás tarjetas muestran funciones previstas."}
+                : "Servicios permite consultar el catálogo y Disponibilidad configura la jornada laboral. La gestión de reservas del negocio está pendiente."}
             </p>
           )}
         </section>

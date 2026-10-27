@@ -105,6 +105,15 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
       .expect(401);
     const admin = await login("admin@example.com");
     const client = await login();
+    const catalog = await request(app.getHttpServer())
+      .get("/reservations/services")
+      .set("Cookie", admin)
+      .expect(200);
+    expect(catalog.body[0]).toMatchObject({
+      id: "corte",
+      duracionMinutos: 45,
+      precio: 6000,
+    });
     await request(app.getHttpServer())
       .post("/reservations")
       .set("Cookie", admin)
