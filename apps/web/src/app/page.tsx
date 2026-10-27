@@ -8,13 +8,14 @@ import { CatalogoServicios } from "../components/catalogo-servicios";
 import { ReservaTurno } from "../components/reserva-turno";
 import { HorariosLaborales } from "../components/horarios-laborales";
 import { GestionReservas } from "../components/gestion-reservas";
+import { MisTurnos } from "../components/mis-turnos";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 export default function HomePage() {
   const [view, setView] = useState<
-    "home" | "booking" | "hours" | "services" | "reservas"
+    "home" | "booking" | "hours" | "services" | "reservas" | "mis-turnos"
   >("home");
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [email, setEmail] = useState("");
@@ -124,6 +125,8 @@ export default function HomePage() {
             <CatalogoServicios onClose={() => setView("home")} />
           ) : view === "reservas" && user.role === "ADMIN" ? (
             <GestionReservas onClose={() => setView("home")} />
+          ) : view === "mis-turnos" && user.role === "CLIENT" ? (
+            <MisTurnos onClose={() => setView("home")} />
           ) : user.role === "ADMIN" ? (
             <div className="role-grid" aria-label="Funciones de administración">
               <button
@@ -161,11 +164,14 @@ export default function HomePage() {
                 <h2>Reservar turno</h2>
                 <p>Elegí servicio, profesional y horario disponible.</p>
               </button>
-              <RoleCard
-                label="Tu agenda"
-                title="Mis reservas"
-                description="Revisá el estado de tus reservas."
-              />
+              <button
+                className="role-card role-card-action"
+                onClick={() => setView("mis-turnos")}
+              >
+                <span className="role-label">Tu agenda</span>
+                <h2>Mis turnos</h2>
+                <p>Revisá el estado de tus reservas y cancelá las que no puedas asistir.</p>
+              </button>
             </div>
           )}
           {error && (
@@ -238,23 +244,5 @@ export default function HomePage() {
         </form>
       </section>
     </main>
-  );
-}
-
-function RoleCard({
-  label,
-  title,
-  description,
-}: {
-  label: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <article className="role-card">
-      <span className="role-label">{label}</span>
-      <h2>{title}</h2>
-      <p>{description}</p>
-    </article>
   );
 }
