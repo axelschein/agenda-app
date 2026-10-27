@@ -1,3 +1,10 @@
+# Local MVP database
+/data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
 # Logs
 logs
 *.log

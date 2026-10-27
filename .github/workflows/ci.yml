@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Jest, tipos y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Pruebas unitarias con Jest
+        run: npm test
+      - name: Integración HTTP y persistencia
+        run: npm run test:integration
+      - name: Verificar tipos de los tests
+        run: npm run test:typecheck --workspace=@agenda-app/api
+      - name: Compilar API y web
+        run: npm run build

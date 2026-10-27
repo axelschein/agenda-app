@@ -10,7 +10,7 @@ La arquitectura y los límites entre componentes están documentados en [README-
 - **Backend:** NestJS con TypeScript en `apps/api`.
 - **Monorepo:** NPM Workspaces, incluidos en NPM.
 - **Paquete compartido:** `packages/shared` contiene contratos y tipos públicos que usan ambas aplicaciones. No contiene reglas de negocio ni acceso a datos.
-- **Persistencia:** solo la API accederá a la persistencia. La base de datos y el ORM quedan por definir.
+- **Persistencia:** SQLite local con el driver integrado de Node para PP2-6, sin ORM. Solo la API accede al archivo de datos. El motor de despliegue definitivo queda pendiente.
 
 Esta opción mantiene un lenguaje y un conjunto de herramientas comunes. El backend se organiza como un monolito modular con módulos NestJS para identidad y acceso, usuarios, servicios, disponibilidad, reservas y pagos.
 
@@ -64,7 +64,29 @@ packages/shared Contratos compartidos entre las aplicaciones
 docs           Material de análisis y diagramas
 ```
 
-PP2-10 implementa el inicio de sesión local para Administrador y Cliente. Las reservas, la administración de catálogo, los pagos y la persistencia se incorporarán al priorizar sus casos de uso y definir sus reglas y modelo de datos.
+PP2-10 implementa el inicio de sesión local para Administrador y Cliente. PP2-6 agrega la reserva guiada, recibo, consulta de reservas propias y configuración de horarios laborales. La [trazabilidad de PP2-6](docs/casos-de-uso/PP2-6-reservar-turno.md) documenta fuentes y decisiones.
+
+## Preparar las reservas locales
+
+1. Iniciá la API una vez para crear el esquema SQLite en data/agenda.sqlite (o AGENDA_DB_PATH). El archivo y los datos locales están excluidos de Git.
+2. Precargá catálogo y personal de demostración con npm run seed:agenda --workspace=@agenda-app/api. Los importes y nombres son ejemplos del prototipo; el script no crea cuentas ni horarios.
+3. Ingresá como Admin y abrí Disponibilidad. La duración de cada reserva está guardada en la base con valor inicial de 60 minutos y puede modificarse desde esa pantalla. Elegí profesional y configurá sus franjas semanales de trabajo. Sin jornadas configuradas no se ofrecen horarios.
+4. Ingresá como Cliente, abrí Reservar turno y elegí servicio, profesional, fecha y horario. Revisá el resumen y confirmá. El turno se registra Pendiente y ocupa un bloque del tamaño configurado por el negocio, independientemente de la duración estimada del servicio. Las reservas existentes conservan su duración si luego cambia la configuración.
+
+SQLite usa el módulo experimental node:sqlite de Node 22.22.3; no requiere instalar un servidor. No borrar el archivo para actualizar el código. El motor definitivo, la migración de usuarios completos, feriados y ausencias siguen pendientes. No hay ABM de catálogo/personal ni pagos en esta entrega.
+
+## Verificación
+
+- npm test: pruebas unitarias con Jest y mocks, directamente sobre TypeScript.
+- npm run test:integration: pruebas HTTP con Supertest y SQLite temporal.
+- npm run test:typecheck --workspace=@agenda-app/api: verificación de tipos sin emitir archivos.
+- npm run build: compilación independiente de las pruebas.
+
+El workflow CI ejecuta estas verificaciones en cada PR y en los cambios de main. Las pruebas se ejecutan antes del build, con pasos separados.
+
+Los comandos de prueba no ejecutan build ni necesitan dist. Jest usa ts-jest para transformar los fuentes en memoria y @nestjs/testing para inyectar mocks. Las pruebas de integración no cargan .env, no usan la base local y no requieren iniciar la API.
+
+Para el build, si NPM tiene configurado Windows PowerShell 5 como intérprete, usá npm --script-shell=cmd.exe run build: el script de compilación existente emplea &&.
 
 ## Pull requests
 
