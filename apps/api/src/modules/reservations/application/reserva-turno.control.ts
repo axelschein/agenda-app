@@ -77,6 +77,8 @@ export class ReservaTurnoControl {
       servicio,
       peluquero,
       total: servicio.precio,
+      duracionBloqueMinutos:
+        this.agenda.consultarConfiguracion().duracionBloqueMinutos,
       zonaHoraria: ZONA_HORARIA,
     };
   }
@@ -122,10 +124,10 @@ export class ReservaTurnoControl {
         const summary = this.generarResumen(selection);
         if (
           summary.total !== body.precioRevisado ||
-          summary.servicio.duracionMinutos !== body.duracionRevisada
+          summary.duracionBloqueMinutos !== body.duracionRevisada
         )
           throw new ConflictException(
-            "El servicio cambió. Volvé a revisar el resumen.",
+            "El servicio o la duración del bloque cambió. Volvé a revisar el resumen.",
           );
         const id = randomUUID(),
           now = new Date().toISOString();
@@ -139,7 +141,7 @@ export class ReservaTurnoControl {
           selection.peluqueroId,
           selection.fecha,
           horaAMinutos(selection.horaInicio),
-          summary.servicio.duracionMinutos,
+          summary.duracionBloqueMinutos,
           Math.round(summary.total * 100),
           now,
         );
@@ -168,7 +170,6 @@ export class ReservaTurnoControl {
     const servicio = {
       ...this.catalogo.obtener(row.servicio_id),
       precio: row.precio_centavos / 100,
-      duracionMinutos: row.duracion_minutos,
     };
     return {
       id: row.id,
@@ -180,6 +181,7 @@ export class ReservaTurnoControl {
       fecha: row.fecha,
       horaInicio: minutosAHora(row.inicio),
       total: servicio.precio,
+      duracionBloqueMinutos: row.duracion_minutos,
       zonaHoraria: ZONA_HORARIA,
     };
   }

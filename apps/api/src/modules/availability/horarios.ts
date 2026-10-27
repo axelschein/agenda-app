@@ -1,6 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
 export const ZONA_HORARIA = "America/Argentina/Buenos_Aires";
-export const PASO_MINUTOS = 15; // configurable policy of this local MVP, not an RD.
 export function horaAMinutos(value: unknown): number {
   if (
     typeof value !== "string" ||

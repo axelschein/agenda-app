@@ -7,7 +7,6 @@ import {
   ahoraLocal,
   horaAMinutos,
   minutosAHora,
-  PASO_MINUTOS,
   validarFecha,
   ZONA_HORARIA,
 } from "./horarios.js";
@@ -22,6 +21,25 @@ export class AgendaControl {
     private readonly catalogo: CatalogoControl,
     private readonly personal: PersonalControl,
   ) {}
+  consultarConfiguracion(): { duracionBloqueMinutos: number } {
+    return this.database.db
+      .prepare(
+        "SELECT duracion_bloque_minutos AS duracionBloqueMinutos FROM configuracion_agenda WHERE id=1",
+      )
+      .get() as { duracionBloqueMinutos: number };
+  }
+  configurarBloque(value: unknown): { duracionBloqueMinutos: number } {
+    if (!Number.isInteger(value) || Number(value) < 1 || Number(value) > 1440)
+      throw new BadRequestException(
+        "El bloque debe durar entre 1 y 1440 minutos enteros.",
+      );
+    this.database.db
+      .prepare(
+        "UPDATE configuracion_agenda SET duracion_bloque_minutos=? WHERE id=1",
+      )
+      .run(Number(value));
+    return this.consultarConfiguracion();
+  }
   consultarHorarios(peluqueroId: string): WorkingWindow[] {
     this.personal.obtener(peluqueroId);
     const rows = this.database.db
@@ -80,7 +98,9 @@ export class AgendaControl {
     peluqueroId: string,
     fechaValue: unknown,
   ): AvailabilityResponse {
-    const servicio = this.catalogo.obtener(servicioId);
+    this.catalogo.obtener(servicioId);
+    const duracionBloqueMinutos =
+      this.consultarConfiguracion().duracionBloqueMinutos;
     this.personal.obtener(peluqueroId);
     const fecha = validarFecha(fechaValue),
       now = ahoraLocal();
@@ -104,14 +124,14 @@ export class AgendaControl {
     for (const w of windows) {
       for (
         let start = w.inicio;
-        start + servicio.duracionMinutos <= w.fin;
-        start += PASO_MINUTOS
+        start + duracionBloqueMinutos <= w.fin;
+        start += duracionBloqueMinutos
       ) {
         const hora = minutosAHora(start);
         if (fecha === now.fecha && hora <= now.hora) continue;
         if (
           !turnos.some(
-            (t) => t.inicio < start + servicio.duracionMinutos && start < t.fin,
+            (t) => t.inicio < start + duracionBloqueMinutos && start < t.fin,
           )
         )
           result.horarios.push(hora);

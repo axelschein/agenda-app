@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { BarberOption, WorkingWindow } from "@agenda-app/shared";
+import type {
+  AgendaSettings,
+  BarberOption,
+  WorkingWindow,
+} from "@agenda-app/shared";
 import { agendaRequest } from "./agenda-api";
 const days = [
   "Domingo",
@@ -12,6 +16,9 @@ const days = [
   "Sábado",
 ];
 export function HorariosLaborales({ onClose }: { onClose: () => void }) {
+  const [block, setBlock] = useState<number | null>(null),
+    [blockInput, setBlockInput] = useState(""),
+    [blockSaving, setBlockSaving] = useState(false);
   const [barbers, setBarbers] = useState<BarberOption[]>([]),
     [barber, setBarber] = useState("");
   const [windows, setWindows] = useState<WorkingWindow[]>([]),
@@ -23,6 +30,16 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
     [loaded, setLoaded] = useState(false);
   useEffect(() => {
     let active = true;
+    agendaRequest<AgendaSettings>("/availability/settings")
+      .then((r) => {
+        if (active) {
+          setBlock(r.duracionBloqueMinutos);
+          setBlockInput(String(r.duracionBloqueMinutos));
+        }
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
     agendaRequest<BarberOption[]>("/reservations/barbers")
       .then((r) => {
         if (active) setBarbers(r);
@@ -64,6 +81,31 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
       active = false;
     };
   }, [barber, reload]);
+  async function saveBlock() {
+    setBlockSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await agendaRequest<AgendaSettings>(
+        "/availability/settings",
+        {
+          method: "PUT",
+          body: JSON.stringify({ duracionBloqueMinutos: Number(blockInput) }),
+        },
+      );
+      setBlock(result.duracionBloqueMinutos);
+      setBlockInput(String(result.duracionBloqueMinutos));
+      setNotice(
+        "Duración del bloque guardada. Se aplica a las nuevas reservas; las existentes conservan su duración.",
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No se pudo guardar el bloque.",
+      );
+    } finally {
+      setBlockSaving(false);
+    }
+  }
   function update(index: number, key: keyof WorkingWindow, value: string) {
     setNotice("");
     setWindows((ws) =>
@@ -107,10 +149,36 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
         <h2 id="hours-title">Horarios laborales</h2>
       </header>
       <p className="form-help">
-        Configurá la jornada semanal por profesional. Cada franja nueva comienza
-        con una hora. Podés separar mañana y tarde. Los días sin franjas no se
-        ofrecen para reservar.
+        Configurá la jornada semanal por profesional. El sistema ofrece bloques
+        del tamaño definido por el negocio. Los días sin jornada no se ofrecen
+        para reservar.
       </p>
+      <div className="booking-note">
+        <label className="booking-label date-field" htmlFor="block-minutes">
+          Duración de cada reserva (minutos)
+          <input
+            id="block-minutes"
+            type="number"
+            min="1"
+            max="1440"
+            step="1"
+            value={blockInput}
+            disabled={block === null || blockSaving}
+            onChange={(e) => setBlockInput(e.target.value)}
+          />
+        </label>
+        <p>
+          Valor inicial: 60 minutos. Se guarda en la base y aplica a todos los
+          profesionales. No modifica reservas existentes.
+        </p>
+        <button
+          className="button"
+          disabled={block === null || blockSaving || saving || !blockInput}
+          onClick={saveBlock}
+        >
+          {blockSaving ? "Guardando…" : "Guardar duración del bloque"}
+        </button>
+      </div>
       <label className="booking-label date-field">
         Peluquero/a
         <select
@@ -190,15 +258,29 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
           )}
           <button
             className="button button-secondary"
-            disabled={saving || windows.length >= 28}
+            disabled={
+              saving || blockSaving || block === null || windows.length >= 28
+            }
             onClick={() =>
               setWindows((ws) => [
                 ...ws,
-                { dia: 1, inicio: "09:00", fin: "10:00" },
+                {
+                  dia: 1,
+                  inicio: "09:00",
+                  fin:
+                    block !== null && block <= 840
+                      ? String(Math.floor((540 + block) / 60)).padStart(
+                          2,
+                          "0",
+                        ) +
+                        ":" +
+                        String((540 + block) % 60).padStart(2, "0")
+                      : "23:00",
+                },
               ])
             }
           >
-            Agregar franja de 1 hora
+            Agregar franja laboral
           </button>
           <button
             className="button booking-primary"
@@ -209,8 +291,8 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
           </button>
           <p className="form-help">
             La jornada indica cuándo trabaja el profesional. Cada reserva ocupa
-            la duración del servicio, no la jornada completa. Cambiar la jornada
-            no cancela turnos ya registrados. El personal y catálogo se
+            un bloque del tamaño configurado, no la jornada completa. Cambiar la
+            jornada no cancela turnos ya registrados. El personal y catálogo se
             precargan para este MVP.
           </p>
         </>

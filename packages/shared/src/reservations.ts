@@ -24,7 +24,11 @@ export interface ReservationSelection {
   fecha: string;
   horaInicio: string;
 }
+export interface AgendaSettings {
+  duracionBloqueMinutos: number;
+}
 export interface ReservationSummary extends ReservationSelection {
+  duracionBloqueMinutos: number;
   servicio: ServiceOption;
   peluquero: BarberOption;
   total: number;

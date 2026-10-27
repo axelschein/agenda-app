@@ -27,7 +27,10 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
   let control: ReservaTurnoControl;
   let catalogo: { obtener: jest.Mock<CatalogoControl["obtener"]> };
   let personal: { obtener: jest.Mock<PersonalControl["obtener"]> };
-  let agenda: { consultar: jest.Mock<AgendaControl["consultar"]> };
+  let agenda: {
+    consultar: jest.Mock<AgendaControl["consultar"]>;
+    consultarConfiguracion: jest.Mock<AgendaControl["consultarConfiguracion"]>;
+  };
   let clientes: {
     obtener: jest.Mock<ClienteIdentidadControl["obtener"]>;
     vincular: jest.Mock<ClienteIdentidadControl["vincular"]>;
@@ -59,13 +62,14 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
       obtener: jest.fn<PersonalControl["obtener"]>().mockReturnValue(peluquero),
     };
     agenda = {
-      consultar: jest
-        .fn<AgendaControl["consultar"]>()
-        .mockReturnValue({
-          fecha: selection.fecha,
-          horarios: ["09:00"],
-          zonaHoraria: "America/Argentina/Buenos_Aires",
-        }),
+      consultarConfiguracion: jest
+        .fn<AgendaControl["consultarConfiguracion"]>()
+        .mockReturnValue({ duracionBloqueMinutos: 60 }),
+      consultar: jest.fn<AgendaControl["consultar"]>().mockReturnValue({
+        fecha: selection.fecha,
+        horarios: ["09:00"],
+        zonaHoraria: "America/Argentina/Buenos_Aires",
+      }),
     };
     clientes = {
       obtener: jest
@@ -97,7 +101,7 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
     ...selection,
     solicitudId: randomUUID(),
     precioRevisado: 6000,
-    duracionRevisada: 45,
+    duracionRevisada: 60,
   });
   it("genera el resumen con los datos del catálogo", () => {
     expect(control.generarResumen(selection)).toMatchObject({
@@ -138,7 +142,7 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
       "ana",
       selection.fecha,
       540,
-      45,
+      60,
       600000,
       expect.any(String),
     );
@@ -163,7 +167,7 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
       peluquero_id: "ana",
       fecha: selection.fecha,
       inicio: 540,
-      duracion_minutos: 45,
+      duracion_minutos: 60,
       precio_centavos: 600000,
       estado: "Pendiente",
     });

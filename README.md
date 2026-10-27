@@ -70,8 +70,8 @@ PP2-10 implementa el inicio de sesión local para Administrador y Cliente. PP2-6
 
 1. Iniciá la API una vez para crear el esquema SQLite en data/agenda.sqlite (o AGENDA_DB_PATH). El archivo y los datos locales están excluidos de Git.
 2. Precargá catálogo y personal de demostración con npm run seed:agenda --workspace=@agenda-app/api. Los importes y nombres son ejemplos del prototipo; el script no crea cuentas ni horarios.
-3. Ingresá como Admin y abrí Disponibilidad. Elegí profesional y configurá sus franjas semanales. Sin jornadas configuradas no se ofrecen horarios.
-4. Ingresá como Cliente, abrí Reservar turno y elegí servicio, profesional, fecha y horario. Revisá el resumen y confirmá. El turno se registra Pendiente.
+3. Ingresá como Admin y abrí Disponibilidad. La duración de cada reserva está guardada en la base con valor inicial de 60 minutos y puede modificarse desde esa pantalla. Elegí profesional y configurá sus franjas semanales de trabajo. Sin jornadas configuradas no se ofrecen horarios.
+4. Ingresá como Cliente, abrí Reservar turno y elegí servicio, profesional, fecha y horario. Revisá el resumen y confirmá. El turno se registra Pendiente y ocupa un bloque del tamaño configurado por el negocio, independientemente de la duración estimada del servicio. Las reservas existentes conservan su duración si luego cambia la configuración.
 
 SQLite usa el módulo experimental node:sqlite de Node 22.22.3; no requiere instalar un servidor. No borrar el archivo para actualizar el código. El motor definitivo, la migración de usuarios completos, feriados y ausencias siguen pendientes. No hay ABM de catálogo/personal ni pagos en esta entrega.
 

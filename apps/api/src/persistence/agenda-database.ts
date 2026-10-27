@@ -16,6 +16,11 @@ export class AgendaDatabase implements OnModuleDestroy {
     this.db = new DatabaseSync(path, { timeout: 5000 });
     this.db.exec(`
       PRAGMA foreign_keys = ON;
+      CREATE TABLE IF NOT EXISTS configuracion_agenda (
+        id INTEGER PRIMARY KEY CHECK(id = 1),
+        duracion_bloque_minutos INTEGER NOT NULL CHECK(duracion_bloque_minutos BETWEEN 1 AND 1440)
+      );
+      INSERT INTO configuracion_agenda VALUES (1,60) ON CONFLICT(id) DO NOTHING;
       CREATE TABLE IF NOT EXISTS servicio (
         id TEXT PRIMARY KEY NOT NULL, nombre TEXT NOT NULL,
         duracion_minutos INTEGER NOT NULL CHECK(duracion_minutos > 0 AND duracion_minutos <= 1440),

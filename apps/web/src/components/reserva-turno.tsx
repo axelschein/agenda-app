@@ -146,7 +146,7 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
           horaInicio: time,
           solicitudId: requestId.current,
           precioRevisado: summary.total,
-          duracionRevisada: summary.servicio.duracionMinutos,
+          duracionRevisada: summary.duracionBloqueMinutos,
         }),
       });
       setReceipt(result);
@@ -303,7 +303,9 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
                     </span>
                     <span>
                       <strong>{s.nombre}</strong>
-                      <small>{s.duracionMinutos} min</small>
+                      <small>
+                        Duración estimada del servicio: {s.duracionMinutos} min
+                      </small>
                     </span>
                     <b>{money(s.precio)}</b>
                   </button>
@@ -479,8 +481,8 @@ function SummaryCard({ summary }: { summary: ReservationSummary }) {
         <dd>{summary.horaInicio} hs</dd>
       </div>
       <div>
-        <dt>Duración</dt>
-        <dd>{summary.servicio.duracionMinutos} min</dd>
+        <dt>Tiempo reservado</dt>
+        <dd>{summary.duracionBloqueMinutos} min</dd>
       </div>
       <div className="summary-total">
         <dt>Total</dt>
@@ -499,7 +501,7 @@ function ReceiptCard({ receipt }: { receipt: ReservationReceipt }) {
         {dateLabel(receipt.fecha)} · {receipt.horaInicio} hs
       </p>
       <p>
-        {receipt.servicio.duracionMinutos} min · {money(receipt.total)}
+        Bloque de {receipt.duracionBloqueMinutos} min · {money(receipt.total)}
       </p>
       <small>Reserva {receipt.id}</small>
     </article>

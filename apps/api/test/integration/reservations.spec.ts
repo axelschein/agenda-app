@@ -28,7 +28,7 @@ const payload = (extra: Record<string, unknown> = {}) => ({
   ...selection,
   solicitudId: randomUUID(),
   precioRevisado: 6000,
-  duracionRevisada: 45,
+  duracionRevisada: 60,
   ...extra,
 });
 
@@ -151,6 +151,7 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
       .send(data)
       .expect(201);
     expect(created.body.estado).toBe("Pendiente");
+    expect(created.body.duracionBloqueMinutos).toBe(60);
     const retry = await request(app.getHttpServer())
       .post("/reservations")
       .set("Cookie", cookie)
@@ -252,5 +253,78 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
     expect(
       database.db.prepare("SELECT COUNT(*) AS n FROM cliente").get()?.n,
     ).toBe(0);
+  });
+  it("persiste la configuración del Admin y conserva la duración de reservas previas", async () => {
+    const admin = await login("admin@example.com"),
+      client = await login();
+    const initial = await request(app.getHttpServer())
+      .get("/availability/settings")
+      .set("Cookie", client)
+      .expect(200);
+    expect(initial.body.duracionBloqueMinutos).toBe(60);
+    await request(app.getHttpServer())
+      .put("/availability/settings")
+      .set("Cookie", client)
+      .send({ duracionBloqueMinutos: 90 })
+      .expect(403);
+    for (const invalid of [0, -1, 1.5, 1441, "60", null])
+      await request(app.getHttpServer())
+        .put("/availability/settings")
+        .set("Cookie", admin)
+        .send({ duracionBloqueMinutos: invalid })
+        .expect(400);
+    await request(app.getHttpServer())
+      .put("/availability/settings")
+      .set("Cookie", admin)
+      .send({ duracionBloqueMinutos: 90 })
+      .expect(200);
+    const available = await request(app.getHttpServer())
+      .get("/reservations/availability")
+      .query(selection)
+      .set("Cookie", client)
+      .expect(200);
+    expect(available.body.horarios).toEqual(["09:00", "10:30"]);
+    await request(app.getHttpServer())
+      .post("/reservations")
+      .set("Cookie", client)
+      .send(payload())
+      .expect(409);
+    const data = payload({ duracionRevisada: 90 });
+    const saved = await request(app.getHttpServer())
+      .post("/reservations")
+      .set("Cookie", client)
+      .send(data)
+      .expect(201);
+    expect(saved.body.duracionBloqueMinutos).toBe(90);
+    expect(saved.body.servicio.duracionMinutos).toBe(45);
+    await request(app.getHttpServer())
+      .put("/availability/settings")
+      .set("Cookie", admin)
+      .send({ duracionBloqueMinutos: 30 })
+      .expect(200);
+    const retry = await request(app.getHttpServer())
+      .post("/reservations")
+      .set("Cookie", client)
+      .send(data)
+      .expect(201);
+    expect(retry.body.id).toBe(saved.body.id);
+    expect(retry.body.duracionBloqueMinutos).toBe(90);
+    const mine = await request(app.getHttpServer())
+      .get("/reservations/mine")
+      .set("Cookie", client)
+      .expect(200);
+    expect(mine.body[0].duracionBloqueMinutos).toBe(90);
+    const reopened = new AgendaDatabase();
+    try {
+      expect(
+        reopened.db
+          .prepare(
+            "SELECT duracion_bloque_minutos n FROM configuracion_agenda WHERE id=1",
+          )
+          .get()?.n,
+      ).toBe(30);
+    } finally {
+      reopened.onModuleDestroy();
+    }
   });
 });
