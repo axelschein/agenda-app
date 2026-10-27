@@ -317,9 +317,26 @@ h1 {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .service-options {
   display: grid;
   gap: 14px;
+}
+.service-radio-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 .service-option {
   display: flex;
@@ -334,6 +351,17 @@ h1 {
   text-align: left;
   color: var(--ink);
   cursor: pointer;
+}
+.service-option input[type="radio"] {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.service-option:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
 .service-option strong {
   display: block;

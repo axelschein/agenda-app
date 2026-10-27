@@ -285,24 +285,30 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
         <>
           {step === 0 && (
             <>
-              <h3 className="booking-label">Elegí tu servicio</h3>
-              <div
-                className="service-options"
-                role="group"
-                aria-label="Servicios"
-              >
+              <h3 className="booking-label">Elegí un servicio</h3>
+              <p className="form-help">
+                Cada turno admite un solo servicio. El tiempo reservado usa el
+                bloque configurado por la peluquería.
+              </p>
+              <fieldset className="service-options service-radio-group">
+                <legend className="sr-only">Servicio para este turno</legend>
                 {services.map((s) => (
-                  <button
+                  <label
                     key={s.id}
                     className={
                       "service-option " + (service === s.id ? "selected" : "")
                     }
-                    aria-pressed={service === s.id}
-                    onClick={() => {
-                      setService(s.id);
-                      setError("");
-                    }}
                   >
+                    <input
+                      type="radio"
+                      name="reservation-service"
+                      value={s.id}
+                      checked={service === s.id}
+                      onChange={() => {
+                        setService(s.id);
+                        setError("");
+                      }}
+                    />
                     <span className="service-icon" aria-hidden="true">
                       {icons[s.id] ?? "✂"}
                     </span>
@@ -313,9 +319,9 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
                       </small>
                     </span>
                     <b>{money(s.precio)}</b>
-                  </button>
+                  </label>
                 ))}
-              </div>
+              </fieldset>
               {!loading && !services.length && (
                 <div>
                   <p>No hay servicios disponibles para reservar.</p>
