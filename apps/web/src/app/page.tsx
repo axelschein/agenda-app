@@ -7,14 +7,15 @@ import type { AuthResponse, AuthenticatedUser } from "@agenda-app/shared";
 import { CatalogoServicios } from "../components/catalogo-servicios";
 import { ReservaTurno } from "../components/reserva-turno";
 import { HorariosLaborales } from "../components/horarios-laborales";
+import { GestionReservas } from "../components/gestion-reservas";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 export default function HomePage() {
-  const [view, setView] = useState<"home" | "booking" | "hours" | "services">(
-    "home",
-  );
+  const [view, setView] = useState<
+    "home" | "booking" | "hours" | "services" | "reservas"
+  >("home");
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -121,6 +122,8 @@ export default function HomePage() {
             <HorariosLaborales onClose={() => setView("home")} />
           ) : view === "services" && user.role === "ADMIN" ? (
             <CatalogoServicios onClose={() => setView("home")} />
+          ) : view === "reservas" && user.role === "ADMIN" ? (
+            <GestionReservas onClose={() => setView("home")} />
           ) : user.role === "ADMIN" ? (
             <div className="role-grid" aria-label="Funciones de administración">
               <button
@@ -139,11 +142,14 @@ export default function HomePage() {
                 <h2>Disponibilidad</h2>
                 <p>Configurá los días y horarios laborales.</p>
               </button>
-              <RoleCard
-                label="Administración"
-                title="Reservas"
-                description="Consultá y gestioná las reservas."
-              />
+              <button
+                className="role-card role-card-action"
+                onClick={() => setView("reservas")}
+              >
+                <span className="role-label">Administración</span>
+                <h2>Reservas</h2>
+                <p>Consultá las reservas y rechazá las que no puedas atender.</p>
+              </button>
             </div>
           ) : (
             <div className="role-grid" aria-label="Funciones de cliente">
@@ -171,7 +177,7 @@ export default function HomePage() {
             <p className="status-note">
               {user.role === "CLIENT"
                 ? "Entrá en Reservar turno para hacer una reserva o consultar tus turnos registrados."
-                : "Servicios permite administrar el catálogo y Disponibilidad configura la jornada laboral. La gestión de reservas del negocio está pendiente."}
+                : "Servicios administra el catálogo, Disponibilidad configura la jornada laboral y Reservas permite consultar y rechazar turnos."}
             </p>
           )}
         </section>

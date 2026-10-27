@@ -50,4 +50,8 @@ export interface CreateReservation extends ReservationSelection {
 export interface ReservationReceipt extends ReservationSummary {
   id: string;
   estado: "Pendiente" | "Confirmado" | "En curso" | "Completado" | "Cancelado";
+  motivoCancelacion?: string;
+}
+export interface ReservationAdminView extends ReservationReceipt {
+  clienteEmail: string;
 }
