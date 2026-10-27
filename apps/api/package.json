@@ -5,8 +5,16 @@
   "type": "module",
   "scripts": {
     "build": "npm run build --workspace=@agenda-app/shared && nest build",
-    "start": "node dist/main.js",
-    "start:dev": "npm run build --workspace=@agenda-app/shared && nest start --watch"
+    "start": "node --env-file=../../.env dist/main.js",
+    "start:dev": "npm run build --workspace=@agenda-app/shared && node --env-file=../../.env ../../node_modules/@nestjs/cli/bin/nest.js start --watch",
+    "auth:hash-password": "node scripts/hash-password.mjs",
+    "test:auth": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --testPathPatterns=user-allowlist",
+    "seed:agenda": "node --env-file=../../.env scripts/seed-agenda.mjs",
+    "test:reservations": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --testPathPatterns=reservations",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand",
+    "test:unit": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand",
+    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --config jest.integration.config.cjs",
+    "test:typecheck": "tsc -p tsconfig.test.json --noEmit"
   },
   "dependencies": {
     "@agenda-app/shared": "0.1.0",
@@ -17,10 +25,16 @@
     "rxjs": "7.8.2"
   },
   "devDependencies": {
+    "@jest/globals": "30.5.2",
     "@nestjs/cli": "12.0.10",
     "@nestjs/schematics": "12.0.10",
+    "@nestjs/testing": "12.2.0",
     "@types/express": "5.0.6",
     "@types/node": "22.20.5",
+    "@types/supertest": "7.2.1",
+    "jest": "30.5.2",
+    "supertest": "7.3.1",
+    "ts-jest": "29.4.15",
     "typescript": "6.0.3"
   }
 }
