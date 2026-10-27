@@ -25,7 +25,10 @@ const servicio = {
 const peluquero = { id: "ana", nombre: "Ana" };
 describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
   let control: ReservaTurnoControl;
-  let catalogo: { obtener: jest.Mock<CatalogoControl["obtener"]> };
+  let catalogo: {
+    obtener: jest.Mock<CatalogoControl["obtener"]>;
+    obtenerHistorico: jest.Mock<CatalogoControl["obtenerHistorico"]>;
+  };
   let personal: { obtener: jest.Mock<PersonalControl["obtener"]> };
   let agenda: {
     consultar: jest.Mock<AgendaControl["consultar"]>;
@@ -57,6 +60,9 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
     });
     catalogo = {
       obtener: jest.fn<CatalogoControl["obtener"]>().mockReturnValue(servicio),
+      obtenerHistorico: jest
+        .fn<CatalogoControl["obtenerHistorico"]>()
+        .mockReturnValue(servicio),
     };
     personal = {
       obtener: jest.fn<PersonalControl["obtener"]>().mockReturnValue(peluquero),
@@ -144,6 +150,8 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
       540,
       60,
       600000,
+      "Corte",
+      45,
       expect.any(String),
     );
     expect(audit).toHaveBeenCalledWith(receipt.id, expect.any(String));
@@ -169,6 +177,8 @@ describe("ReservaTurnoControl — unitarias con dependencias mockeadas", () => {
       inicio: 540,
       duracion_minutos: 60,
       precio_centavos: 600000,
+      servicio_nombre: "Corte",
+      servicio_duracion_minutos: 45,
       estado: "Pendiente",
     });
     expect(

@@ -3,6 +3,13 @@ export interface ServiceOption {
   nombre: string;
   duracionMinutos: number;
   precio: number;
+  activo?: boolean;
+}
+
+export interface ServiceInput {
+  nombre: string;
+  duracionMinutos: number;
+  precio: number;
 }
 export interface BarberOption {
   id: string;

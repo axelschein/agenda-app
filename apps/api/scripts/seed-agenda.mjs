@@ -7,7 +7,7 @@ const db = new DatabaseSync(
 try {
   db.exec("PRAGMA foreign_keys=ON; BEGIN IMMEDIATE");
   const service = db.prepare(
-    "INSERT INTO servicio VALUES (?,?,?,?) ON CONFLICT(id) DO NOTHING",
+    "INSERT INTO servicio(id,nombre,duracion_minutos,precio_centavos,activo) VALUES (?,?,?, ?,1) ON CONFLICT(id) DO NOTHING",
   );
   for (const row of [
     ["corte", "Corte de cabello", 45, 600000],
