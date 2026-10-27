@@ -109,13 +109,30 @@ export class AgendaControl {
       horarios: [],
       zonaHoraria: ZONA_HORARIA,
     };
-    if (fecha < now.fecha) return result;
+    if (fecha < now.fecha)
+      return {
+        ...result,
+        motivoSinDisponibilidad:
+          "La fecha seleccionada ya pasó. Elegí una fecha futura.",
+      };
     const dia = new Date(fecha + "T12:00:00Z").getUTCDay();
     const windows = this.database.db
       .prepare(
         "SELECT inicio, fin FROM horario_laboral WHERE peluquero_id = ? AND dia = ? ORDER BY inicio",
       )
       .all(peluqueroId, dia) as unknown as Intervalo[];
+    if (!windows.length)
+      return {
+        ...result,
+        motivoSinDisponibilidad:
+          "Este profesional no tiene jornada laboral configurada para ese día. Elegí otro día o profesional.",
+      };
+    if (windows.every((w) => w.fin - w.inicio < duracionBloqueMinutos))
+      return {
+        ...result,
+        motivoSinDisponibilidad:
+          "El turno completo no cabe en las franjas laborales de este día. Elegí otro día o profesional.",
+      };
     const turnos = this.database.db
       .prepare(
         "SELECT inicio, fin FROM ocupacion_agenda WHERE peluquero_id = ? AND fecha = ?",
@@ -137,6 +154,9 @@ export class AgendaControl {
           result.horarios.push(hora);
       }
     }
+    if (!result.horarios.length)
+      result.motivoSinDisponibilidad =
+        "Los bloques de este día ya están ocupados o pasaron. Elegí otro día o profesional.";
     return result;
   }
 }

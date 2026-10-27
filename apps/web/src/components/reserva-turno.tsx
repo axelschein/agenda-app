@@ -22,6 +22,7 @@ const icons: Record<string, string> = {
   barba: "▥",
 };
 export function ReservaTurno({ onClose }: { onClose: () => void }) {
+  const [availabilityReason, setAvailabilityReason] = useState("");
   const [step, setStep] = useState(0);
   const [catalogReload, setCatalogReload] = useState(0);
   const [services, setServices] = useState<ServiceOption[]>([]),
@@ -74,6 +75,7 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
     setSummary(null);
     setTime("");
     setSlots([]);
+    setAvailabilityReason("");
     if (!service || !barber || !date) return;
     let active = true;
     setLoading(true);
@@ -84,7 +86,10 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
     });
     agendaRequest<AvailabilityResponse>("/reservations/availability?" + params)
       .then((r) => {
-        if (active) setSlots(r.horarios);
+        if (active) {
+          setSlots(r.horarios);
+          setAvailabilityReason(r.motivoSinDisponibilidad ?? "");
+        }
       })
       .catch((e) => {
         if (active) setError(e.message);
@@ -390,8 +395,9 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
               </label>
               <h3 className="booking-label">Horarios disponibles</h3>
               <p className="form-help">
-                Hora de Buenos Aires. Se reserva la duración completa del
-                servicio.
+                Hora de Buenos Aires. Se reserva un bloque del tamaño
+                configurado por la peluquería; el tiempo reservado se muestra en
+                el resumen.
               </p>
               <div className="slot-options" role="group" aria-label="Horarios">
                 {slots.map((h) => (
@@ -408,8 +414,8 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
               </div>
               {!loading && barber && date && !slots.length && (
                 <p role="status">
-                  No hay horarios disponibles para esa fecha. Probá con otro día
-                  o profesional.
+                  {availabilityReason ||
+                    "No hay horarios disponibles para esa fecha. Probá con otro día o profesional."}
                 </p>
               )}
               <div className="booking-actions">

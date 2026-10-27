@@ -34,7 +34,7 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
       .then((r) => {
         if (active) {
           setBlock(r.duracionBloqueMinutos);
-          setBlockInput(String(r.duracionBloqueMinutos));
+          setBlockInput(String(r.duracionBloqueMinutos / 60));
         }
       })
       .catch((e) => {
@@ -86,15 +86,25 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
     setError("");
     setNotice("");
     try {
+      const minutes = Number(blockInput) * 60;
+      if (
+        !Number.isFinite(minutes) ||
+        minutes < 1 ||
+        minutes > 1440 ||
+        Math.abs(minutes - Math.round(minutes)) > 1e-7
+      )
+        throw new Error(
+          "Indicá una duración de hasta 24 horas, equivalente a minutos enteros.",
+        );
       const result = await agendaRequest<AgendaSettings>(
         "/availability/settings",
         {
           method: "PUT",
-          body: JSON.stringify({ duracionBloqueMinutos: Number(blockInput) }),
+          body: JSON.stringify({ duracionBloqueMinutos: Math.round(minutes) }),
         },
       );
       setBlock(result.duracionBloqueMinutos);
-      setBlockInput(String(result.duracionBloqueMinutos));
+      setBlockInput(String(result.duracionBloqueMinutos / 60));
       setNotice(
         "Duración del bloque guardada. Se aplica a las nuevas reservas; las existentes conservan su duración.",
       );
@@ -135,6 +145,15 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
       setSaving(false);
     }
   }
+  const noFit =
+    block !== null &&
+    windows.length > 0 &&
+    windows.every((w) => {
+      const start =
+        Number(w.inicio.slice(0, 2)) * 60 + Number(w.inicio.slice(3));
+      const end = Number(w.fin.slice(0, 2)) * 60 + Number(w.fin.slice(3));
+      return end - start < block;
+    });
   return (
     <section className="booking" aria-labelledby="hours-title">
       <header className="booking-header">
@@ -154,22 +173,23 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
         para reservar.
       </p>
       <div className="booking-note">
-        <label className="booking-label date-field" htmlFor="block-minutes">
-          Duración de cada reserva (minutos)
+        <label className="booking-label date-field" htmlFor="block-hours">
+          Duración de cada reserva (horas)
           <input
-            id="block-minutes"
+            id="block-hours"
             type="number"
-            min="1"
-            max="1440"
-            step="1"
+            min={1 / 60}
+            max="24"
+            step="any"
             value={blockInput}
             disabled={block === null || blockSaving}
             onChange={(e) => setBlockInput(e.target.value)}
           />
         </label>
         <p>
-          Valor inicial: 60 minutos. Se guarda en la base y aplica a todos los
-          profesionales. No modifica reservas existentes.
+          Valor inicial: 1 hora. Podés ingresar 1.5 para una hora y media. Se
+          guarda en la base y aplica a todos los profesionales. No modifica
+          reservas existentes.
         </p>
         <button
           className="button"
@@ -201,6 +221,13 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      {barber && loaded && !loading && noFit && (
+        <p role="alert" className="error-message">
+          Ninguna franja de este profesional alcanza para un bloque de{" "}
+          {block! / 60} horas. Reducí la duración del bloque o ampliá la
+          jornada; de lo contrario no habrá horarios para reservar.
+        </p>
+      )}
       {barber && loaded && !loading && (
         <>
           <div className="working-windows">

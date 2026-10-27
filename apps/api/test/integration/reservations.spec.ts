@@ -327,4 +327,39 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
       reopened.onModuleDestroy();
     }
   });
+  it("explica que un bloque de seis horas no cabe en una jornada de tres y permite reservar al configurarlo en una hora", async () => {
+    const admin = await login("admin@example.com"),
+      client = await login();
+    await request(app.getHttpServer())
+      .put("/availability/settings")
+      .set("Cookie", admin)
+      .send({ duracionBloqueMinutos: 360 })
+      .expect(200);
+    const unavailable = await request(app.getHttpServer())
+      .get("/reservations/availability")
+      .query(selection)
+      .set("Cookie", client)
+      .expect(200);
+    expect(unavailable.body.horarios).toEqual([]);
+    expect(unavailable.body.motivoSinDisponibilidad).toContain("no cabe");
+    await request(app.getHttpServer())
+      .put("/availability/settings")
+      .set("Cookie", admin)
+      .send({ duracionBloqueMinutos: 60 })
+      .expect(200);
+    const available = await request(app.getHttpServer())
+      .get("/reservations/availability")
+      .query(selection)
+      .set("Cookie", client)
+      .expect(200);
+    expect(available.body.horarios).toEqual(["09:00", "10:00", "11:00"]);
+    const otherDay = new Date(selection.fecha + "T12:00:00Z");
+    otherDay.setUTCDate(otherDay.getUTCDate() + 1);
+    const closed = await request(app.getHttpServer())
+      .get("/reservations/availability")
+      .query({ ...selection, fecha: otherDay.toISOString().slice(0, 10) })
+      .set("Cookie", client)
+      .expect(200);
+    expect(closed.body.motivoSinDisponibilidad).toContain("no tiene jornada");
+  });
 });

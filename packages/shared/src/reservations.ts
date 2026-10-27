@@ -14,6 +14,7 @@ export interface WorkingWindow {
   fin: string;
 }
 export interface AvailabilityResponse {
+  motivoSinDisponibilidad?: string;
   fecha: string;
   horarios: string[];
   zonaHoraria: string;
