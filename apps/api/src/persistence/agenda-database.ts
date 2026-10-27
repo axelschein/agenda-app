@@ -24,25 +24,57 @@ export class AgendaDatabase implements OnModuleDestroy {
       CREATE TABLE IF NOT EXISTS servicio (
         id TEXT PRIMARY KEY NOT NULL, nombre TEXT NOT NULL,
         duracion_minutos INTEGER NOT NULL CHECK(duracion_minutos > 0 AND duracion_minutos <= 1440),
-        precio_centavos INTEGER NOT NULL CHECK(precio_centavos >= 0)
-      );
-      CREATE TABLE IF NOT EXISTS peluquero (id TEXT PRIMARY KEY NOT NULL, nombre TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS cliente (id TEXT PRIMARY KEY NOT NULL, email TEXT NOT NULL UNIQUE);
-      CREATE TABLE IF NOT EXISTS horario_laboral (
-        peluquero_id TEXT NOT NULL REFERENCES peluquero(id), dia INTEGER NOT NULL CHECK(dia BETWEEN 0 AND 6),
-        inicio INTEGER NOT NULL CHECK(inicio BETWEEN 0 AND 1439),
-        fin INTEGER NOT NULL CHECK(fin > inicio AND fin <= 1440),
-        PRIMARY KEY(peluquero_id, dia, inicio)
-      );
-      CREATE TABLE IF NOT EXISTS turno (
-        id TEXT PRIMARY KEY NOT NULL, solicitud_id TEXT NOT NULL, cliente_id TEXT NOT NULL REFERENCES cliente(id),
-        servicio_id TEXT NOT NULL REFERENCES servicio(id), peluquero_id TEXT NOT NULL REFERENCES peluquero(id),
-        fecha TEXT NOT NULL, inicio INTEGER NOT NULL CHECK(inicio BETWEEN 0 AND 1439),
-        duracion_minutos INTEGER NOT NULL CHECK(duracion_minutos > 0 AND inicio + duracion_minutos <= 1440),
         precio_centavos INTEGER NOT NULL CHECK(precio_centavos >= 0),
-        estado TEXT NOT NULL CHECK(estado IN ('Pendiente','Confirmado','En curso','Completado','Cancelado')),
-        creado_en TEXT NOT NULL, UNIQUE(cliente_id, solicitud_id)
+        activo INTEGER NOT NULL DEFAULT 1 CHECK(activo IN (0,1))
       );
+      `);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      // Upgrade databases created before the catalogue management story.
+      const serviceColumns = this.db
+        .prepare("PRAGMA table_info(servicio)")
+        .all() as { name: string }[];
+      if (!serviceColumns.some((column) => column.name === "activo")) {
+        this.db.exec(
+          "ALTER TABLE servicio ADD COLUMN activo INTEGER NOT NULL DEFAULT 1 CHECK(activo IN (0,1))",
+        );
+      }
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS peluquero (id TEXT PRIMARY KEY NOT NULL, nombre TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS cliente (id TEXT PRIMARY KEY NOT NULL, email TEXT NOT NULL UNIQUE);
+        CREATE TABLE IF NOT EXISTS horario_laboral (
+          peluquero_id TEXT NOT NULL REFERENCES peluquero(id), dia INTEGER NOT NULL CHECK(dia BETWEEN 0 AND 6),
+          inicio INTEGER NOT NULL CHECK(inicio BETWEEN 0 AND 1439),
+          fin INTEGER NOT NULL CHECK(fin > inicio AND fin <= 1440),
+          PRIMARY KEY(peluquero_id, dia, inicio)
+        );
+        CREATE TABLE IF NOT EXISTS turno (
+          id TEXT PRIMARY KEY NOT NULL, solicitud_id TEXT NOT NULL, cliente_id TEXT NOT NULL REFERENCES cliente(id),
+          servicio_id TEXT NOT NULL REFERENCES servicio(id), peluquero_id TEXT NOT NULL REFERENCES peluquero(id),
+          fecha TEXT NOT NULL, inicio INTEGER NOT NULL CHECK(inicio BETWEEN 0 AND 1439),
+          duracion_minutos INTEGER NOT NULL CHECK(duracion_minutos > 0 AND inicio + duracion_minutos <= 1440),
+          precio_centavos INTEGER NOT NULL CHECK(precio_centavos >= 0),
+          servicio_nombre TEXT NOT NULL DEFAULT '',
+          servicio_duracion_minutos INTEGER NOT NULL DEFAULT 60 CHECK(servicio_duracion_minutos BETWEEN 1 AND 1440),
+          estado TEXT NOT NULL CHECK(estado IN ('Pendiente','Confirmado','En curso','Completado','Cancelado')),
+          creado_en TEXT NOT NULL, UNIQUE(cliente_id, solicitud_id)
+        );
+      `);
+      const turnColumns = this.db.prepare("PRAGMA table_info(turno)").all() as { name: string }[];
+      if (!turnColumns.some((column) => column.name === "servicio_nombre")) {
+        this.db.exec("ALTER TABLE turno ADD COLUMN servicio_nombre TEXT NOT NULL DEFAULT ''");
+        this.db.exec("UPDATE turno SET servicio_nombre=(SELECT nombre FROM servicio WHERE servicio.id=turno.servicio_id)");
+      }
+      if (!turnColumns.some((column) => column.name === "servicio_duracion_minutos")) {
+        this.db.exec("ALTER TABLE turno ADD COLUMN servicio_duracion_minutos INTEGER NOT NULL DEFAULT 60");
+        this.db.exec("UPDATE turno SET servicio_duracion_minutos=(SELECT duracion_minutos FROM servicio WHERE servicio.id=turno.servicio_id)");
+      }
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+    this.db.exec(`
       CREATE VIEW IF NOT EXISTS ocupacion_agenda AS
         SELECT peluquero_id, fecha, inicio, inicio + duracion_minutos AS fin
         FROM turno WHERE estado <> 'Cancelado';

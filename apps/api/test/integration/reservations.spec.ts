@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join, resolve, dirname, basename } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID, scryptSync } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
 import { AppModule } from "../../src/app.module.js";
 import { AgendaDatabase } from "../../src/persistence/agenda-database.js";
 
@@ -73,7 +74,7 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
     app = await createApp();
     database = app.get(AgendaDatabase);
     database.db
-      .prepare("INSERT INTO servicio VALUES (?,?,?,?)")
+      .prepare("INSERT INTO servicio(id,nombre,duracion_minutos,precio_centavos) VALUES (?,?,?,?)")
       .run("corte", "Corte de cabello", 45, 600000);
     database.db
       .prepare("INSERT INTO peluquero VALUES (?,?)")
@@ -97,6 +98,49 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
         basename(folder).startsWith("agenda-jest-")
       )
         rmSync(folder, { recursive: true, force: true });
+    }
+  });
+  it("migra sin pérdida una base anterior al catálogo y sus instantáneas", () => {
+    const migrationFolder = mkdtempSync(join(tmpdir(), "agenda-migration-"));
+    const migrationPath = join(migrationFolder, "agenda.sqlite");
+    const previousPath = process.env.AGENDA_DB_PATH;
+    const oldDatabase = new DatabaseSync(migrationPath);
+    try {
+      oldDatabase.exec(`
+        CREATE TABLE servicio (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, duracion_minutos INTEGER NOT NULL, precio_centavos INTEGER NOT NULL);
+        CREATE TABLE peluquero (id TEXT PRIMARY KEY, nombre TEXT NOT NULL);
+        CREATE TABLE cliente (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE);
+        CREATE TABLE turno (
+          id TEXT PRIMARY KEY, solicitud_id TEXT NOT NULL, cliente_id TEXT NOT NULL REFERENCES cliente(id),
+          servicio_id TEXT NOT NULL REFERENCES servicio(id), peluquero_id TEXT NOT NULL REFERENCES peluquero(id),
+          fecha TEXT NOT NULL, inicio INTEGER NOT NULL, duracion_minutos INTEGER NOT NULL,
+          precio_centavos INTEGER NOT NULL, estado TEXT NOT NULL, creado_en TEXT NOT NULL,
+          UNIQUE(cliente_id, solicitud_id)
+        );
+        INSERT INTO servicio VALUES ('corte','Corte previo',45,600000);
+        INSERT INTO peluquero VALUES ('ana','Ana');
+        INSERT INTO cliente VALUES ('cliente-1','cliente@example.com');
+        INSERT INTO turno VALUES ('turno-1','solicitud-1','cliente-1','corte','ana','2099-01-05',540,60,600000,'Pendiente','2026-01-01T00:00:00.000Z');
+      `);
+    } finally {
+      oldDatabase.close();
+    }
+
+    let migrated: AgendaDatabase | undefined;
+    try {
+      process.env.AGENDA_DB_PATH = migrationPath;
+      migrated = new AgendaDatabase();
+      expect(migrated.db.prepare("SELECT activo FROM servicio WHERE id='corte'").get()).toMatchObject({ activo: 1 });
+      expect(migrated.db.prepare("SELECT servicio_nombre, servicio_duracion_minutos FROM turno WHERE id='turno-1'").get()).toMatchObject({
+        servicio_nombre: "Corte previo",
+        servicio_duracion_minutos: 45,
+      });
+    } finally {
+      migrated?.onModuleDestroy();
+      if (previousPath === undefined) delete process.env.AGENDA_DB_PATH;
+      else process.env.AGENDA_DB_PATH = previousPath;
+      if (dirname(resolve(migrationFolder)) === resolve(tmpdir()) && basename(migrationFolder).startsWith("agenda-migration-"))
+        rmSync(migrationFolder, { recursive: true, force: true });
     }
   });
   it("restringe las rutas según autenticación y rol", async () => {
@@ -137,6 +181,93 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
     expect(available.body.horarios).not.toContain("09:00");
     expect(available.body.horarios).toContain("10:00");
   });
+  it("administra servicios solo como Admin y conserva instantáneas históricas", async () => {
+    const admin = await login("admin@example.com");
+    const client = await login();
+
+    await request(app.getHttpServer())
+      .post("/services")
+      .set("Cookie", client)
+      .send({ nombre: "Color", duracionMinutos: 90, precio: 14000 })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .post("/services")
+      .set("Cookie", admin)
+      .send({ nombre: "  ", duracionMinutos: 90, precio: 14000 })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post("/services")
+      .set("Cookie", admin)
+      .send({ nombre: "Color", duracionMinutos: 90, precio: 14000.001 })
+      .expect(400);
+
+    const created = await request(app.getHttpServer())
+      .post("/services")
+      .set("Cookie", admin)
+      .send({ nombre: "Color", duracionMinutos: 90, precio: 14000 })
+      .expect(201);
+    expect(created.body).toMatchObject({ nombre: "Color", activo: true });
+
+    const updated = await request(app.getHttpServer())
+      .put(`/services/${created.body.id}`)
+      .set("Cookie", admin)
+      .send({ nombre: "Coloración", duracionMinutos: 100, precio: 14500.5 })
+      .expect(200);
+    expect(updated.body).toMatchObject({ nombre: "Coloración", precio: 14500.5 });
+
+    const summary = await request(app.getHttpServer())
+      .post("/reservations/summary")
+      .set("Cookie", client)
+      .send(selection)
+      .expect(201);
+    const receipt = await request(app.getHttpServer())
+      .post("/reservations")
+      .set("Cookie", client)
+      .send(payload({
+        precioRevisado: summary.body.total,
+        duracionRevisada: summary.body.duracionBloqueMinutos,
+      }))
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .delete("/services/corte")
+      .set("Cookie", admin)
+      .expect(200);
+
+    const activeCatalog = await request(app.getHttpServer())
+      .get("/reservations/services")
+      .set("Cookie", client)
+      .expect(200);
+    expect(activeCatalog.body.some((service: { id: string }) => service.id === "corte")).toBe(false);
+
+    const adminCatalog = await request(app.getHttpServer())
+      .get("/services/admin")
+      .set("Cookie", admin)
+      .expect(200);
+    expect(adminCatalog.body.find((service: { id: string }) => service.id === "corte").activo).toBe(false);
+
+    const historical = await request(app.getHttpServer())
+      .get("/reservations/mine")
+      .set("Cookie", client)
+      .expect(200);
+    expect(historical.body[0]).toMatchObject({
+      id: receipt.body.id,
+      servicio: { nombre: "Corte de cabello", duracionMinutos: 45 },
+      total: 6000,
+    });
+
+    await request(app.getHttpServer())
+      .patch("/services/corte/reactivate")
+      .set("Cookie", admin)
+      .expect(200);
+    const reactivated = await request(app.getHttpServer())
+      .get("/reservations/services")
+      .set("Cookie", client)
+      .expect(200);
+    expect(reactivated.body.some((service: { id: string }) => service.id === "corte")).toBe(true);
+  });
+
   it("registra Pendiente, evita duplicados y devuelve solo reservas propias", async () => {
     const cookie = await login(),
       data = payload({ clienteId: "suplantado" });
@@ -232,7 +363,7 @@ describe("Reservas — integración HTTP y SQLite temporal", () => {
     expect(() =>
       database.db
         .prepare(
-          "INSERT INTO turno SELECT ?, ?, cliente_id, servicio_id, peluquero_id, fecha, inicio+15, duracion_minutos, precio_centavos, estado, creado_en FROM turno LIMIT 1",
+          "INSERT INTO turno (id,solicitud_id,cliente_id,servicio_id,peluquero_id,fecha,inicio,duracion_minutos,precio_centavos,estado,creado_en) SELECT ?, ?, cliente_id, servicio_id, peluquero_id, fecha, inicio+15, duracion_minutos, precio_centavos, estado, creado_en FROM turno LIMIT 1",
         )
         .run(randomUUID(), randomUUID()),
     ).toThrow("HORARIO_OCUPADO");

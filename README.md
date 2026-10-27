@@ -64,7 +64,7 @@ packages/shared Contratos compartidos entre las aplicaciones
 docs           Material de análisis y diagramas
 ```
 
-PP2-10 implementa el inicio de sesión local para Administrador y Cliente. PP2-6 agrega la reserva guiada, recibo, consulta de reservas propias y configuración de horarios laborales. La [trazabilidad de PP2-6](docs/casos-de-uso/PP2-6-reservar-turno.md) documenta fuentes y decisiones.
+PP2-10 implementa el inicio de sesión local para Administrador y Cliente. PP2-6 agrega la reserva guiada, recibo, consulta de reservas propias y configuración de horarios laborales. PP2-11 implementa el ABM del catálogo con baja lógica para conservar turnos previos. Las [trazabilidades de PP2-6](docs/casos-de-uso/PP2-6-reservar-turno.md) y [PP2-11](docs/casos-de-uso/PP2-11-gestionar-catalogo-servicios.md) documentan fuentes y decisiones.
 
 ## Preparar las reservas locales
 
@@ -73,7 +73,7 @@ PP2-10 implementa el inicio de sesión local para Administrador y Cliente. PP2-6
 3. Ingresá como Admin y abrí Disponibilidad. La duración de cada reserva está guardada en la base con valor inicial de 60 minutos y puede modificarse desde esa pantalla. Elegí profesional y configurá sus franjas semanales de trabajo. Sin jornadas configuradas no se ofrecen horarios.
 4. Ingresá como Cliente, abrí Reservar turno y elegí servicio, profesional, fecha y horario. Revisá el resumen y confirmá. El turno se registra Pendiente y ocupa un bloque del tamaño configurado por el negocio, independientemente de la duración estimada del servicio. Las reservas existentes conservan su duración si luego cambia la configuración.
 
-SQLite usa el módulo experimental node:sqlite de Node 22.22.3; no requiere instalar un servidor. No borrar el archivo para actualizar el código. El motor definitivo, la migración de usuarios completos, feriados y ausencias siguen pendientes. No hay ABM de catálogo/personal ni pagos en esta entrega.
+SQLite usa el módulo experimental node:sqlite de Node 22.22.3; no requiere instalar un servidor. No borrar el archivo para actualizar el código. El motor definitivo, la migración de usuarios completos, feriados y ausencias siguen pendientes. El catálogo de servicios se administra desde Servicios en el perfil Admin; las bajas se conservan para las reservas existentes y se excluyen de nuevas reservas. Personal y pagos todavía no tienen ABM.
 
 ## Verificación
 

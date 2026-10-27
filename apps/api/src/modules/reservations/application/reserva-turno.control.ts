@@ -29,6 +29,8 @@ interface TurnoRow {
   inicio: number;
   duracion_minutos: number;
   precio_centavos: number;
+  servicio_nombre: string;
+  servicio_duracion_minutos: number;
   estado: ReservationReceipt["estado"];
 }
 @Injectable()
@@ -132,7 +134,7 @@ export class ReservaTurnoControl {
         const id = randomUUID(),
           now = new Date().toISOString();
         db.prepare(
-          "INSERT INTO turno VALUES (?,?,?,?,?,?,?,?,?,'Pendiente',?)",
+          "INSERT INTO turno (id,solicitud_id,cliente_id,servicio_id,peluquero_id,fecha,inicio,duracion_minutos,precio_centavos,servicio_nombre,servicio_duracion_minutos,estado,creado_en) VALUES (?,?,?,?,?,?,?,?,?,?,?,'Pendiente',?)",
         ).run(
           id,
           body.solicitudId,
@@ -143,6 +145,8 @@ export class ReservaTurnoControl {
           horaAMinutos(selection.horaInicio),
           summary.duracionBloqueMinutos,
           Math.round(summary.total * 100),
+          summary.servicio.nombre,
+          summary.servicio.duracionMinutos,
           now,
         );
         db.prepare(
@@ -168,7 +172,9 @@ export class ReservaTurnoControl {
   }
   private recibo(row: TurnoRow): ReservationReceipt {
     const servicio = {
-      ...this.catalogo.obtener(row.servicio_id),
+      ...this.catalogo.obtenerHistorico(row.servicio_id),
+      nombre: row.servicio_nombre,
+      duracionMinutos: row.servicio_duracion_minutos,
       precio: row.precio_centavos / 100,
     };
     return {

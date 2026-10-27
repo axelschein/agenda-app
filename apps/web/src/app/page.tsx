@@ -129,7 +129,7 @@ export default function HomePage() {
               >
                 <span className="role-label">Administración</span>
                 <h2>Servicios</h2>
-                <p>Consultá los servicios, precios y duraciones.</p>
+                <p>Mantené los servicios, sus precios y duraciones estimadas.</p>
               </button>
               <button
                 className="role-card role-card-action"
@@ -171,7 +171,7 @@ export default function HomePage() {
             <p className="status-note">
               {user.role === "CLIENT"
                 ? "Entrá en Reservar turno para hacer una reserva o consultar tus turnos registrados."
-                : "Servicios permite consultar el catálogo y Disponibilidad configura la jornada laboral. La gestión de reservas del negocio está pendiente."}
+                : "Servicios permite administrar el catálogo y Disponibilidad configura la jornada laboral. La gestión de reservas del negocio está pendiente."}
             </p>
           )}
         </section>

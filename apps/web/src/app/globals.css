@@ -360,6 +360,38 @@ h1 {
   color: var(--accent);
   font-size: 1.7rem;
 }
+.service-form {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 32px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+}
+.service-form h3, .booking > h3 { margin: 0; }
+.service-form label { font-weight: 650; }
+.service-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: white;
+}
+.service-form-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.service-form-fields > div { display: grid; gap: 8px; }
+.service-form-actions, .service-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.service-actions { margin-left: auto; }
+.service-actions .button { min-height: 40px; padding: 8px 12px; font-size: .9rem; }
+.service-inactive { opacity: .72; }
+.button-danger { background: #fff; color: #9c2f35; border: 1px solid #e0b4b6; }
+@media (max-width: 640px) {
+  .service-form-fields { grid-template-columns: 1fr; }
+  .service-option { flex-wrap: wrap; }
+  .service-actions { width: 100%; margin-left: 0; }
+}
 .booking .selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px #6d28df15;
