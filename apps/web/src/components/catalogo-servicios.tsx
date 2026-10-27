@@ -70,6 +70,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
   }
 
   async function deactivate(service: ServiceOption) {
+    if (saving) return;
     if (
       !window.confirm(
         `¿Dar de baja “${service.nombre}”? Los turnos anteriores conservarán sus datos.`,
@@ -77,6 +78,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
     )
       return;
     setError("");
+    setSaving(true);
     try {
       await agendaRequest(`/services/${encodeURIComponent(service.id)}`, {
         method: "DELETE",
@@ -85,11 +87,15 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
       setReload((n) => n + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo dar de baja el servicio.");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function reactivate(service: ServiceOption) {
+    if (saving) return;
     setError("");
+    setSaving(true);
     try {
       await agendaRequest(
         `/services/${encodeURIComponent(service.id)}/reactivate`,
@@ -98,6 +104,8 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
       setReload((n) => n + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo reactivar el servicio.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -173,7 +181,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="service-form-actions">
-          <button className="button" type="submit" disabled={saving}>
+          <button className="button" type="submit" disabled={saving || loading}>
             {saving
               ? "Guardando…"
               : editingId
@@ -218,6 +226,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
                   <button
                     className="button button-secondary"
                     type="button"
+                    disabled={saving || loading}
                     onClick={() => startEdit(s)}
                   >
                     Editar
@@ -225,6 +234,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
                   <button
                     className="button button-danger"
                     type="button"
+                    disabled={saving || loading}
                     onClick={() => void deactivate(s)}
                   >
                     Dar de baja
@@ -234,6 +244,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
                 <button
                   className="button button-secondary"
                   type="button"
+                  disabled={saving || loading}
                   onClick={() => void reactivate(s)}
                 >
                   Reactivar
