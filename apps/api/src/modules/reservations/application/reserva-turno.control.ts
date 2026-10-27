@@ -171,8 +171,11 @@ export class ReservaTurnoControl {
     return rows.map((row) => this.recibo(row));
   }
   private recibo(row: TurnoRow): ReservationReceipt {
+    // El turno guarda su propia instantánea del servicio (nombre, duración y
+    // precio al confirmar). El recibo se arma solo con esos datos de la fila y
+    // no depende del catálogo vivo, que pudo cambiar o darse de baja.
     const servicio = {
-      ...this.catalogo.obtenerHistorico(row.servicio_id),
+      id: row.servicio_id,
       nombre: row.servicio_nombre,
       duracionMinutos: row.servicio_duracion_minutos,
       precio: row.precio_centavos / 100,
