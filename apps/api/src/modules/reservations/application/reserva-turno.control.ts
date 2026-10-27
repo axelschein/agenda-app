@@ -32,6 +32,7 @@ interface TurnoRow {
   servicio_nombre: string;
   servicio_duracion_minutos: number;
   estado: ReservationReceipt["estado"];
+  motivo_cancelacion?: string;
 }
 @Injectable()
 export class ReservaTurnoControl {
@@ -189,6 +190,9 @@ export class ReservaTurnoControl {
       total: servicio.precio,
       duracionBloqueMinutos: row.duracion_minutos,
       zonaHoraria: ZONA_HORARIA,
+      ...(row.motivo_cancelacion
+        ? { motivoCancelacion: row.motivo_cancelacion }
+        : {}),
     };
   }
 }

@@ -566,6 +566,18 @@ h1 {
   border-radius: 20px;
   font-size: 0.85rem;
 }
+.state-badge.estado-confirmado {
+  color: #247c4d;
+  background: #e0f6ea;
+}
+.state-badge.estado-cancelado {
+  color: #a62626;
+  background: #fdecec;
+}
+.state-badge.estado-completado {
+  color: #3a5bbf;
+  background: #e7edff;
+}
 .working-window {
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr auto;

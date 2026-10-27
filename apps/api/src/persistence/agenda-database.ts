@@ -57,6 +57,7 @@ export class AgendaDatabase implements OnModuleDestroy {
           servicio_nombre TEXT NOT NULL DEFAULT '',
           servicio_duracion_minutos INTEGER NOT NULL DEFAULT 60 CHECK(servicio_duracion_minutos BETWEEN 1 AND 1440),
           estado TEXT NOT NULL CHECK(estado IN ('Pendiente','Confirmado','En curso','Completado','Cancelado')),
+          motivo_cancelacion TEXT NOT NULL DEFAULT '',
           creado_en TEXT NOT NULL, UNIQUE(cliente_id, solicitud_id)
         );
       `);
@@ -68,6 +69,10 @@ export class AgendaDatabase implements OnModuleDestroy {
       if (!turnColumns.some((column) => column.name === "servicio_duracion_minutos")) {
         this.db.exec("ALTER TABLE turno ADD COLUMN servicio_duracion_minutos INTEGER NOT NULL DEFAULT 60");
         this.db.exec("UPDATE turno SET servicio_duracion_minutos=(SELECT duracion_minutos FROM servicio WHERE servicio.id=turno.servicio_id)");
+      }
+      // Upgrade databases created before the reservation management story (PP2-13/PP2-14).
+      if (!turnColumns.some((column) => column.name === "motivo_cancelacion")) {
+        this.db.exec("ALTER TABLE turno ADD COLUMN motivo_cancelacion TEXT NOT NULL DEFAULT ''");
       }
       this.db.exec("COMMIT");
     } catch (error) {
