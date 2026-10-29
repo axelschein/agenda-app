@@ -9,13 +9,23 @@ import { ReservaTurno } from "../components/reserva-turno";
 import { HorariosLaborales } from "../components/horarios-laborales";
 import { GestionReservas } from "../components/gestion-reservas";
 import { MisTurnos } from "../components/mis-turnos";
+import { FlujoPeluquero } from "../components/flujo-peluquero";
+import { GestionPersonal } from "../components/gestion-personal";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 export default function HomePage() {
   const [view, setView] = useState<
-    "home" | "booking" | "hours" | "services" | "reservas" | "mis-turnos"
+    | "home"
+    | "booking"
+    | "hours"
+    | "services"
+    | "reservas"
+    | "mis-turnos"
+    | "peluquero"
+    | "peluquero-perfil"
+    | "personal"
   >("home");
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [email, setEmail] = useState("");
@@ -105,7 +115,7 @@ export default function HomePage() {
             <div>
               <p className="eyebrow">
                 AgendaApp ·{" "}
-                {user.role === "ADMIN" ? "Administración" : "Cliente"}
+                {user.role === "ADMIN" ? "Administración" : user.role === "BARBER" ? "Peluquero/a" : "Cliente"}
               </p>
               <h1 id="page-title">Hola, {user.email}</h1>
             </div>
@@ -127,6 +137,10 @@ export default function HomePage() {
             <GestionReservas onClose={() => setView("home")} />
           ) : view === "mis-turnos" && user.role === "CLIENT" ? (
             <MisTurnos onClose={() => setView("home")} />
+          ) : (view === "peluquero" || view === "peluquero-perfil") && user.role === "BARBER" ? (
+            <FlujoPeluquero key={view} onClose={() => setView("home")} initialSection={view === "peluquero-perfil" ? "perfil" : "agenda"} />
+          ) : view === "personal" && user.role === "ADMIN" ? (
+            <GestionPersonal onClose={() => setView("home")} />
           ) : user.role === "ADMIN" ? (
             <div className="role-grid" aria-label="Funciones de administración">
               <button
@@ -152,6 +166,24 @@ export default function HomePage() {
                 <span className="role-label">Administración</span>
                 <h2>Reservas</h2>
                 <p>Consultá las reservas y rechazá las que no puedas atender.</p>
+              </button>
+              <button className="role-card role-card-action" onClick={() => setView("personal")}>
+                <span className="role-label">Administración</span>
+                <h2>Personal</h2>
+                <p>Registrá y actualizá los perfiles profesionales.</p>
+              </button>
+            </div>
+          ) : user.role === "BARBER" ? (
+            <div className="role-grid" aria-label="Funciones del peluquero">
+              <button className="role-card role-card-action" onClick={() => setView("peluquero")}>
+                <span className="role-label">Tu trabajo</span>
+                <h2>Agenda y turnos</h2>
+                <p>Consultá tu agenda, gestioná turnos pendientes y revisá tus indicadores.</p>
+              </button>
+              <button className="role-card role-card-action" onClick={() => setView("peluquero-perfil")}>
+                <span className="role-label">Tu perfil</span>
+                <h2>Mi perfil</h2>
+                <p>Consultá y actualizá los datos de tu perfil profesional.</p>
               </button>
             </div>
           ) : (
@@ -183,7 +215,9 @@ export default function HomePage() {
             <p className="status-note">
               {user.role === "CLIENT"
                 ? "Entrá en Reservar turno para hacer una reserva o consultar tus turnos registrados."
-                : "Servicios administra el catálogo, Disponibilidad configura la jornada laboral y Reservas permite consultar y rechazar turnos."}
+                : user.role === "BARBER"
+                  ? "Entrá en Agenda y turnos para consultar tus asignaciones, gestionar turnos pendientes y revisar tus indicadores."
+                  : "Servicios administra el catálogo, Disponibilidad configura la jornada laboral y Reservas permite consultar y rechazar turnos."}
             </p>
           )}
         </section>
@@ -206,6 +240,7 @@ export default function HomePage() {
           >
             <div className="role-chip">Cliente</div>
             <div className="role-chip">Administrador</div>
+            <div className="role-chip">Peluquero/a</div>
           </div>
         </div>
         <form className="login-card" onSubmit={handleLogin}>

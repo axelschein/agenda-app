@@ -25,11 +25,20 @@ export class UserAllowlistService {
       return null;
     }
     if (!(await verifyPassword(credentials.password, user.passwordHash))) return null;
-    return { email: user.email, role: user.role };
+    return {
+      email: user.email,
+      role: user.role,
+      ...(user.peluqueroId ? { peluqueroId: user.peluqueroId } : {}),
+    };
   }
 
   isAllowed(user: AuthenticatedUser): boolean {
-    return this.users.some((candidate) => candidate.email === user.email && candidate.role === user.role);
+    return this.users.some(
+      (candidate) =>
+        candidate.email === user.email &&
+        candidate.role === user.role &&
+        candidate.peluqueroId === user.peluqueroId,
+    );
   }
 
   private loadUsers(value: string): AllowedUser[] {
@@ -44,6 +53,7 @@ export class UserAllowlistService {
     }
 
     const emails = new Set<string>();
+    const barberProfiles = new Set<string>();
     return parsed.map((entry: unknown) => {
       if (!entry || typeof entry !== "object") {
         throw new InternalServerErrorException("Cada cuenta permitida debe ser un objeto válido.");
@@ -52,17 +62,33 @@ export class UserAllowlistService {
       const email = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
       const role = candidate.role;
       const passwordHash = candidate.passwordHash;
+      const peluqueroId = candidate.peluqueroId;
       if (!email.includes("@") || typeof passwordHash !== "string" || parsePasswordHash(passwordHash) === null) {
         throw new InternalServerErrorException("Cada cuenta permitida requiere email y passwordHash scrypt válidos.");
       }
       if (typeof role !== "string" || !USER_ROLES.includes(role as UserRole)) {
-        throw new InternalServerErrorException("El rol de la cuenta debe ser ADMIN o CLIENT.");
+        throw new InternalServerErrorException("El rol de la cuenta debe ser ADMIN, CLIENT o BARBER.");
+      }
+      if (role === "BARBER" && (typeof peluqueroId !== "string" || !peluqueroId.trim())) {
+        throw new InternalServerErrorException("Cada cuenta BARBER debe incluir el peluqueroId de su perfil profesional.");
+      }
+      if (role === "BARBER" && barberProfiles.has((peluqueroId as string).trim())) {
+        throw new InternalServerErrorException("Un perfil profesional no puede estar vinculado a más de una cuenta BARBER.");
+      }
+      if (role !== "BARBER" && peluqueroId !== undefined) {
+        throw new InternalServerErrorException("Solo las cuentas BARBER pueden incluir peluqueroId.");
       }
       if (emails.has(email)) {
         throw new InternalServerErrorException("AUTH_USERS_JSON no puede repetir direcciones de correo.");
       }
       emails.add(email);
-      return { email, role: role as UserRole, passwordHash };
+      if (role === "BARBER") barberProfiles.add((peluqueroId as string).trim());
+      return {
+        email,
+        role: role as UserRole,
+        ...(role === "BARBER" ? { peluqueroId: (peluqueroId as string).trim() } : {}),
+        passwordHash,
+      };
     });
   }
 }

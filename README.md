@@ -64,7 +64,7 @@ packages/shared Contratos compartidos entre las aplicaciones
 docs           Material de análisis y diagramas
 ```
 
-PP2-10 implementa el inicio de sesión local para Administrador y Cliente. PP2-6 agrega la reserva guiada, recibo, consulta de reservas propias y configuración de horarios laborales. PP2-11 implementa el ABM del catálogo con baja lógica para conservar turnos previos. Las [trazabilidades de PP2-6](docs/casos-de-uso/PP2-6-reservar-turno.md) y [PP2-11](docs/casos-de-uso/PP2-11-gestionar-catalogo-servicios.md) documentan fuentes y decisiones.
+PP2-10 implementa el inicio de sesión local para Administrador y Cliente. La épica PP2-22 agrega el rol Peluquero/a, vinculado a un perfil mediante `peluqueroId` en `AUTH_USERS_JSON`; el perfil debe existir en la tabla `peluquero`. PP2-6 agrega la reserva guiada, recibo, consulta de reservas propias y configuración de horarios laborales. PP2-11 implementa el ABM del catálogo con baja lógica para conservar turnos previos. Las [trazabilidades de PP2-6](docs/casos-de-uso/PP2-6-reservar-turno.md), [PP2-11](docs/casos-de-uso/PP2-11-gestionar-catalogo-servicios.md) y [PP2-22](docs/casos-de-uso/PP2-22-flujo-integral-peluquero.md) documentan fuentes y decisiones.
 
 ## Preparar las reservas locales
 
