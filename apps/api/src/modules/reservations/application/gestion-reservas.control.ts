@@ -106,6 +106,40 @@ export class GestionReservasControl {
     });
   }
 
+  /** El Admin confirma cualquier turno pendiente (habilita el cobro). */
+  confirmar(id: string): ReservationAdminView {
+    return this.transicion(id, "Pendiente", "Confirmado", "TURNO_CONFIRMADO");
+  }
+
+  /** El Admin marca completado un turno confirmado (habilita el cobro). */
+  completar(id: string): ReservationAdminView {
+    return this.transicion(id, "Confirmado", "Completado", "TURNO_COMPLETADO");
+  }
+
+  private transicion(
+    id: string,
+    desde: ReservationAdminView["estado"],
+    hacia: ReservationAdminView["estado"],
+    accion: string,
+  ): ReservationAdminView {
+    return this.database.transaction(() => {
+      const turno = this.buscar(id);
+      if (turno.estado !== desde)
+        throw new BadRequestException(
+          `Solo se puede marcar como ${hacia.toLowerCase()} un turno ${desde.toLowerCase()} (este está ${turno.estado.toLowerCase()}).`,
+        );
+      this.database.db
+        .prepare("UPDATE turno SET estado=? WHERE id=?")
+        .run(hacia, id);
+      this.database.db
+        .prepare(
+          "INSERT INTO auditoria_turno(turno_id,accion,ocurrido_en) VALUES (?,?,?)",
+        )
+        .run(id, accion, new Date().toISOString());
+      return this.vista(this.buscar(id));
+    });
+  }
+
   private buscar(id: string): TurnoAdminRow {
     const row = this.database.db
       .prepare(`${this.seleccion} WHERE t.id = ?`)

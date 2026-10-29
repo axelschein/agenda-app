@@ -45,4 +45,14 @@ export class GestionReservasController {
   rechazarAsignada(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.gestion.rechazarAsignado(id, user.peluqueroId!);
   }
+
+  @Patch(":id/admin-confirm")
+  confirmar(@Param("id") id: string) {
+    return this.gestion.confirmar(id);
+  }
+
+  @Patch(":id/admin-complete")
+  completar(@Param("id") id: string) {
+    return this.gestion.completar(id);
+  }
 }
