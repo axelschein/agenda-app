@@ -95,7 +95,7 @@ export class IndicadoresControl {
     const rows = this.database.db
       .prepare(
         `SELECT t.peluquero_id,
-                COUNT(*) turnos,
+                COUNT(DISTINCT t.id) turnos,
                 COALESCE(SUM(CASE WHEN p.estado <> 'Anulado' THEN p.monto_centavos ELSE 0 END),0) ingresos
          FROM turno t
          LEFT JOIN pago p ON p.turno_id = t.id

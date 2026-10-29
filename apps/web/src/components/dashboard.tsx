@@ -14,6 +14,7 @@ import { FlujoPeluquero } from "./flujo-peluquero";
 import { GestionPersonal } from "./gestion-personal";
 import { Cobros } from "./cobros";
 import { MisPagos } from "./mis-pagos";
+import { Indicadores } from "./indicadores";
 
 type View =
   | "home"
@@ -26,7 +27,8 @@ type View =
   | "peluquero-perfil"
   | "personal"
   | "cobros"
-  | "pagos";
+  | "pagos"
+  | "indicadores";
 
 /**
  * Isla cliente del panel autenticado. Recibe el usuario ya resuelto en el
@@ -101,6 +103,8 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
           <Cobros onClose={() => setView("home")} />
         ) : view === "pagos" && user.role === "CLIENT" ? (
           <MisPagos onClose={() => setView("home")} />
+        ) : view === "indicadores" && user.role === "ADMIN" ? (
+          <Indicadores onClose={() => setView("home")} />
         ) : user.role === "ADMIN" ? (
           <div className="role-grid" aria-label="Funciones de administración">
             <button
@@ -142,6 +146,14 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
               <span className="role-label">Administración</span>
               <h2>Cobros</h2>
               <p>Registrá y consultá los cobros de los turnos confirmados.</p>
+            </button>
+            <button
+              className="role-card role-card-action"
+              onClick={() => setView("indicadores")}
+            >
+              <span className="role-label">Administración</span>
+              <h2>Indicadores</h2>
+              <p>Consultá ingresos, turnos y reportes del negocio por período.</p>
             </button>
           </div>
         ) : user.role === "BARBER" ? (
