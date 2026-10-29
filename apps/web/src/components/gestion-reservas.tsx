@@ -126,7 +126,7 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
                   className="button"
                   type="button"
                   disabled={busyId === r.id}
-                  onClick={() => void avanzar(r, "confirm")}
+                  onClick={() => void avanzar(r, "admin-confirm")}
                 >
                   {busyId === r.id ? "Procesando…" : "Confirmar"}
                 </button>
@@ -136,7 +136,7 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
                   className="button"
                   type="button"
                   disabled={busyId === r.id}
-                  onClick={() => void avanzar(r, "complete")}
+                  onClick={() => void avanzar(r, "admin-complete")}
                 >
                   {busyId === r.id ? "Procesando…" : "Marcar completado"}
                 </button>

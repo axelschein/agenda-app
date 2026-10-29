@@ -57,7 +57,7 @@ describe("Cobros de turnos (PP2-21)", () => {
       .expect(201);
     const id = created.body.id as string;
     await request(app.getHttpServer())
-      .patch(`/reservations/${id}/confirm`)
+      .patch(`/reservations/${id}/admin-confirm`)
       .set("Cookie", admin)
       .expect(200);
     return id;

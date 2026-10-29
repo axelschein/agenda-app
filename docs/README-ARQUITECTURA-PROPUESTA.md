@@ -4,7 +4,7 @@
 
 AgendaApp se organiza como un **monolito modular**: una aplicación web Next.js, una API NestJS y un paquete pequeño de contratos compartidos. La API es un solo proceso, dividido por capacidades del negocio. No hay microservicios. PP2-6 utiliza SQLite local, sin ORM; el motor definitivo de despliegue sigue pendiente.
 
-La implementación actual incluye PP2-10 (autenticación local), PP2-6 (reserva guiada y jornadas laborales) y PP2-11 (gestión del catálogo). La persistencia parcial de CU09 se documenta en [PP2-6](casos-de-uso/PP2-6-reservar-turno.md) y la gestión del catálogo en [PP2-11](casos-de-uso/PP2-11-gestionar-catalogo-servicios.md). PP2-12 completa la presentación accesible de la selección única de servicio y se documenta en [PP2-12](casos-de-uso/PP2-12-seleccionar-servicio.md). Las clases del MODP no se consideran automáticamente materializadas por esta implementación; los perfiles completos y pagos permanecen pendientes.
+La implementación actual incluye PP2-10 (autenticación local), PP2-6 (reserva guiada y jornadas laborales), PP2-11 (gestión del catálogo), PP2-12 (selección accesible del servicio) y el corte en curso de PP2-22 (acceso, agenda, estados y perfil del Peluquero/a). La persistencia parcial de CU09 se documenta en [PP2-6](casos-de-uso/PP2-6-reservar-turno.md), la gestión del catálogo en [PP2-11](casos-de-uso/PP2-11-gestionar-catalogo-servicios.md), la selección en [PP2-12](casos-de-uso/PP2-12-seleccionar-servicio.md) y el flujo profesional en [PP2-22](casos-de-uso/PP2-22-flujo-integral-peluquero.md). Esta implementación local no resuelve las decisiones de persistencia de cuentas, rating ni cobros del modelo de diseño.
 
 ## Componentes y límites
 
@@ -27,15 +27,15 @@ Un `@Module` de Nest configura un límite de dependencias: agrupa controladores 
 
 | Módulo | Clases/función dueña | Estado actual |
 |---|---|---|
-| `auth` | `AutenticacionControl`, sesiones, lista permitida y guards | Inicio, sesión actual y cierre de sesión implementados para `ADMIN` y `CLIENT`. |
-| `users` | `Usuario`, `Cliente`, `Peluquero`, `Administrador` | Entidades modeladas; PersonalControl consulta personal precargado. Perfiles completos pendientes. |
+| `auth` | `AutenticacionControl`, sesiones, lista permitida y guards | Inicio, sesión actual y cierre para `ADMIN`, `CLIENT` y `BARBER`; la cuenta profesional enlaza un `peluqueroId` de configuración. |
+| `users` | `Usuario`, `Cliente`, `Peluquero`, `Administrador` | Personal activo, gestión administrativa básica y perfil propio de Peluquero/a; la cuenta sigue en allowlist local, no como entidad persistente. |
 | `services` | `Servicio` y catálogo | Entidad y persistencia; consulta de activos para reservas, ABM Admin y baja lógica con reactivación (PP2-11). |
 | `availability` | Consulta de horarios disponibles | AgendaControl calcula horarios desde jornadas semanales configuradas por Admin, duración y ocupación persistida. |
-| `reservations` | `Turno`, reserva, consulta y cambios de estado | ReservaTurnoControl registra Pendiente en SQLite, protege intervalos e idempotencia y devuelve recibos propios. Otras transiciones pendientes. |
+| `reservations` | `Turno`, reserva, consulta y cambios de estado | ReservaTurnoControl registra Pendiente en SQLite, protege intervalos e idempotencia y devuelve recibos propios. El profesional consulta sus asignaciones y confirma/rechaza solo turnos pendientes propios; el resto de transiciones sigue sujeto a sus actores definidos. |
 | `payments` | `Pago` y cobros | Módulo Nest declarado en esta estructura; entidad modelada, sin flujo de cobro. |
 | `health` | Estado técnico de la API | Endpoint `GET /api/v1/health`. |
 
-Los módulos funcionales que todavía no exponen una función tienen una declaración mínima. No significa que sus casos de uso ya estén implementados. El rol `Peluquero` existe en el dominio, pero el acceso de ese rol no está habilitado en PP2-10.
+Los módulos funcionales que todavía no exponen una función tienen una declaración mínima. No significa que sus casos de uso ya estén implementados. PP2-10 mantiene el alcance MVP de Admin y Cliente; la extensión del rol profesional posterior se describe en PP2-22.
 
 ## Dónde va cada clase
 
@@ -51,7 +51,7 @@ No se crean copias de `Usuario` o `Turno` en otros módulos, en Next o en `packa
 
 Las subclases de usuario reutilizan los datos comunes definidos en `Usuario`. Las asociaciones de `Turno` y `Pago` conservan las clases del modelo; no se duplican sus atributos para representarlas. Los tipos de `packages/shared` describen el formato de intercambio HTTP y pueden diferir de las entidades internas.
 
-La lista permitida de PP2-10 solo tiene `email`, `role` y `passwordHash`, y funciona como adaptador local de desarrollo. En esta iteración `AutenticacionControl` depende directamente de `UserAllowlistService`; al incorporar persistencia, se extraerá un puerto de aplicación para desacoplar el caso de uso del adaptador. La sesión transporta una identidad autenticada mínima de `packages/shared`, todavía no una instancia completa de `Usuario`, porque el dominio también define `id`, `nombre` y `telefono`. La integración de cuentas con las entidades de usuario queda pendiente de persistencia y datos de perfil.
+La allowlist funciona como adaptador local de desarrollo. Las cuentas `ADMIN` y `CLIENT` tienen `email`, `role` y `passwordHash`; una cuenta `BARBER` incluye además `peluqueroId`, que debe corresponder a un perfil activo. La sesión transporta esa identidad mínima de `packages/shared`, no una instancia completa de `Usuario`. Al incorporar persistencia de cuentas se deberá resolver la relación definitiva entre cuenta y entidades de usuario.
 
 ## Estructura y convención para crecer
 

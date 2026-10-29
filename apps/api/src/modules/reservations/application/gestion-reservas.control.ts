@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -7,7 +8,7 @@ import type { ReservationAdminView } from "@agenda-app/shared";
 import { AgendaDatabase } from "../../../persistence/agenda-database.js";
 import { CatalogoControl } from "../../services/index.js";
 import { PersonalControl } from "../../users/index.js";
-import { minutosAHora, ZONA_HORARIA } from "../../availability/index.js";
+import { minutosAHora, validarFecha, ZONA_HORARIA } from "../../availability/index.js";
 
 /** Motivo fijo definido en el criterio de aceptación de PP2-13. */
 export const MOTIVO_RECHAZO = "rechazado por el negocio";
@@ -70,15 +71,51 @@ export class GestionReservasControl {
     });
   }
 
+  consultarAsignadas(peluqueroId: string, desdeValue: unknown, hastaValue: unknown): ReservationAdminView[] {
+    const desde = validarFecha(desdeValue);
+    const hasta = validarFecha(hastaValue);
+    const dias = (Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / 86_400_000;
+    if (dias < 0 || dias > 6) {
+      throw new BadRequestException("La agenda debe abarcar un período de uno a siete días.");
+    }
+    const rows = this.database.db
+      .prepare(`${this.seleccion} WHERE t.peluquero_id=? AND t.fecha>=? AND t.fecha<=? ORDER BY t.fecha, t.inicio`)
+      .all(peluqueroId, desde, hasta) as unknown as TurnoAdminRow[];
+    return rows.map((row) => this.vista(row));
+  }
+
+  confirmarAsignado(id: string, peluqueroId: string): ReservationAdminView {
+    return this.database.transaction(() => {
+      const turno = this.buscar(id);
+      if (turno.peluquero_id !== peluqueroId) throw new ForbiddenException("Solo podés gestionar turnos asignados a tu perfil.");
+      if (turno.estado !== "Pendiente") throw new BadRequestException("Solo se puede confirmar un turno pendiente.");
+      this.database.db.prepare("UPDATE turno SET estado='Confirmado' WHERE id=?").run(id);
+      this.database.db.prepare("INSERT INTO auditoria_turno(turno_id,accion,ocurrido_en) VALUES (?,'TURNO_CONFIRMADO_PELUQUERO',?)").run(id, new Date().toISOString());
+      return this.vista(this.buscar(id));
+    });
+  }
+
+  rechazarAsignado(id: string, peluqueroId: string): ReservationAdminView {
+    return this.database.transaction(() => {
+      const turno = this.buscar(id);
+      if (turno.peluquero_id !== peluqueroId) throw new ForbiddenException("Solo podés gestionar turnos asignados a tu perfil.");
+      if (turno.estado !== "Pendiente") throw new BadRequestException("Solo se puede rechazar un turno pendiente.");
+      this.database.db.prepare("UPDATE turno SET estado='Cancelado', motivo_cancelacion=? WHERE id=?").run(MOTIVO_RECHAZO, id);
+      this.database.db.prepare("INSERT INTO auditoria_turno(turno_id,accion,ocurrido_en) VALUES (?,'TURNO_RECHAZADO_PELUQUERO',?)").run(id, new Date().toISOString());
+      return this.vista(this.buscar(id));
+    });
+  }
+
+  /** El Admin confirma cualquier turno pendiente (habilita el cobro). */
   confirmar(id: string): ReservationAdminView {
     return this.transicion(id, "Pendiente", "Confirmado", "TURNO_CONFIRMADO");
   }
 
+  /** El Admin marca completado un turno confirmado (habilita el cobro). */
   completar(id: string): ReservationAdminView {
     return this.transicion(id, "Confirmado", "Completado", "TURNO_COMPLETADO");
   }
 
-  /** Avanza el estado de un turno validando el estado de origen permitido. */
   private transicion(
     id: string,
     desde: ReservationAdminView["estado"],
@@ -125,7 +162,7 @@ export class GestionReservasControl {
       servicioId: row.servicio_id,
       peluqueroId: row.peluquero_id,
       servicio,
-      peluquero: this.personal.obtener(row.peluquero_id),
+      peluquero: this.personal.obtener(row.peluquero_id, true),
       fecha: row.fecha,
       horaInicio: minutosAHora(row.inicio),
       total: servicio.precio,

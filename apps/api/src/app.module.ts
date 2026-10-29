@@ -5,12 +5,14 @@ import { ReservationsModule } from "./modules/reservations/reservations.module.j
 import { PaymentsModule } from "./modules/payments/payments.module.js";
 import { ServicesModule } from "./modules/services/services.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
+import { ProfilesModule } from "./modules/users/profiles.module.js";
 import { HealthModule } from "./health/health.module.js";
 
 @Module({
   imports: [
     AuthModule,
     UsersModule,
+    ProfilesModule,
     ServicesModule,
     AvailabilityModule,
     ReservationsModule,

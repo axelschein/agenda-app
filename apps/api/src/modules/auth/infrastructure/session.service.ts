@@ -3,6 +3,7 @@ import type { AuthenticatedUser } from "@agenda-app/shared";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { SESSION_TTL_SECONDS } from "../auth.constants.js";
 import { UserAllowlistService } from "./user-allowlist.service.js";
+import { PersonalControl } from "../../users/index.js";
 
 interface SessionPayload extends AuthenticatedUser {
   expiresAt: number;
@@ -12,7 +13,10 @@ interface SessionPayload extends AuthenticatedUser {
 export class SessionService {
   private readonly secret: string;
 
-  constructor(private readonly allowlist: UserAllowlistService) {
+  constructor(
+    private readonly allowlist: UserAllowlistService,
+    private readonly personal: PersonalControl,
+  ) {
     this.secret = process.env.AUTH_SESSION_SECRET ?? "";
     if (this.secret.length < 32) {
       throw new InternalServerErrorException("AUTH_SESSION_SECRET debe tener al menos 32 caracteres.");
@@ -47,8 +51,17 @@ export class SessionService {
       const { email, role, expiresAt } = payload;
       if (typeof email !== "string" || typeof role !== "string" || typeof expiresAt !== "number") return null;
       if (expiresAt <= Math.floor(Date.now() / 1000)) return null;
-      const user: AuthenticatedUser = { email, role: role as AuthenticatedUser["role"] };
-      return this.allowlist.isAllowed(user) ? user : null;
+      const peluqueroId = payload.peluqueroId;
+      if (role === "BARBER" && (typeof peluqueroId !== "string" || !peluqueroId)) return null;
+      if (role !== "BARBER" && peluqueroId !== undefined) return null;
+      const user: AuthenticatedUser = {
+        email,
+        role: role as AuthenticatedUser["role"],
+        ...(typeof peluqueroId === "string" ? { peluqueroId } : {}),
+      };
+      if (!this.allowlist.isAllowed(user)) return null;
+      if (user.role === "BARBER" && !this.personal.existe(user.peluqueroId!)) return null;
+      return user;
     } catch {
       return null;
     }

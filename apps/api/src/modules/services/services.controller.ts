@@ -20,7 +20,7 @@ export class ServicesController {
   constructor(private readonly catalogo: CatalogoControl) {}
 
   @Get()
-  @Roles("ADMIN", "CLIENT")
+  @Roles("ADMIN", "CLIENT", "BARBER")
   consultar() {
     return this.catalogo.consultar();
   }
