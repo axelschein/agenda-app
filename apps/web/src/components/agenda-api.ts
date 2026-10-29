@@ -1,5 +1,6 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+// Browser requests go through the Next.js route so its host owns the
+// httpOnly session cookie. The route forwards the request to the API.
+export const API_URL = "/api/v1";
 export class AgendaError extends Error {
   constructor(
     message: string,
