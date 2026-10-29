@@ -41,6 +41,11 @@ export class AgendaDatabase implements OnModuleDestroy {
       }
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS peluquero (id TEXT PRIMARY KEY NOT NULL, nombre TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS perfil_peluquero (
+          peluquero_id TEXT PRIMARY KEY NOT NULL REFERENCES peluquero(id),
+          telefono TEXT NOT NULL DEFAULT '',
+          activo INTEGER NOT NULL DEFAULT 1 CHECK(activo IN (0,1))
+        );
         CREATE TABLE IF NOT EXISTS cliente (id TEXT PRIMARY KEY NOT NULL, email TEXT NOT NULL UNIQUE);
         CREATE TABLE IF NOT EXISTS horario_laboral (
           peluquero_id TEXT NOT NULL REFERENCES peluquero(id), dia INTEGER NOT NULL CHECK(dia BETWEEN 0 AND 6),
@@ -62,6 +67,17 @@ export class AgendaDatabase implements OnModuleDestroy {
         );
       `);
       const turnColumns = this.db.prepare("PRAGMA table_info(turno)").all() as { name: string }[];
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS auditoria_usuario (
+          id INTEGER PRIMARY KEY,
+          usuario_id TEXT NOT NULL REFERENCES peluquero(id),
+          actor_email TEXT NOT NULL,
+          accion TEXT NOT NULL,
+          detalle TEXT NOT NULL,
+          ocurrido_en TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS auditoria_usuario_usuario ON auditoria_usuario(usuario_id, ocurrido_en);
+      `);
       if (!turnColumns.some((column) => column.name === "servicio_nombre")) {
         this.db.exec("ALTER TABLE turno ADD COLUMN servicio_nombre TEXT NOT NULL DEFAULT ''");
         this.db.exec("UPDATE turno SET servicio_nombre=(SELECT nombre FROM servicio WHERE servicio.id=turno.servicio_id)");

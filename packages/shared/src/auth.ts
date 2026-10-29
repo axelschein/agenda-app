@@ -8,6 +8,8 @@ export interface LoginCredentials {
 export interface AuthenticatedUser {
   email: string;
   role: UserRole;
+  /** Present only for a professional account linked to one peluquero profile. */
+  peluqueroId?: string;
 }
 
 export interface AuthResponse {
