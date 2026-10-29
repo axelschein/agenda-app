@@ -70,7 +70,7 @@ try {
     ["t-06", "c-lucas", "marco", "corte", -5, 600, "Confirmado"],
     ["t-07", "c-juan", "ana", "corte", 2, 540, "Confirmado"],
     ["t-08", "c-sofia", "lucia", "corte-barba", 2, 600, "Confirmado"],
-    ["t-09", "c-lucas", "marco", "barba", 3, 540, "Completado"],
+    ["t-09", "c-lucas", "marco", "barba", -3, 540, "Completado"],
     ["t-10", "c-juan", "ana", "coloracion", 5, 660, "Pendiente"],
   ];
   const turno = db.prepare(
