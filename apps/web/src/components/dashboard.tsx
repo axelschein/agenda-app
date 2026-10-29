@@ -10,8 +10,23 @@ import { ReservaTurno } from "./reserva-turno";
 import { HorariosLaborales } from "./horarios-laborales";
 import { GestionReservas } from "./gestion-reservas";
 import { MisTurnos } from "./mis-turnos";
+import { FlujoPeluquero } from "./flujo-peluquero";
+import { GestionPersonal } from "./gestion-personal";
+import { Cobros } from "./cobros";
+import { MisPagos } from "./mis-pagos";
 
-type View = "home" | "booking" | "hours" | "services" | "reservas" | "mis-turnos";
+type View =
+  | "home"
+  | "booking"
+  | "hours"
+  | "services"
+  | "reservas"
+  | "mis-turnos"
+  | "peluquero"
+  | "peluquero-perfil"
+  | "personal"
+  | "cobros"
+  | "pagos";
 
 /**
  * Isla cliente del panel autenticado. Recibe el usuario ya resuelto en el
@@ -46,7 +61,12 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
         <header className="dashboard-header">
           <div>
             <p className="eyebrow">
-              AgendaApp · {user.role === "ADMIN" ? "Administración" : "Cliente"}
+              AgendaApp ·{" "}
+              {user.role === "ADMIN"
+                ? "Administración"
+                : user.role === "BARBER"
+                  ? "Peluquero/a"
+                  : "Cliente"}
             </p>
             <h1 id="page-title">Hola, {user.email}</h1>
           </div>
@@ -68,6 +88,19 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
           <GestionReservas onClose={() => setView("home")} />
         ) : view === "mis-turnos" && user.role === "CLIENT" ? (
           <MisTurnos onClose={() => setView("home")} />
+        ) : (view === "peluquero" || view === "peluquero-perfil") &&
+          user.role === "BARBER" ? (
+          <FlujoPeluquero
+            key={view}
+            onClose={() => setView("home")}
+            initialSection={view === "peluquero-perfil" ? "perfil" : "agenda"}
+          />
+        ) : view === "personal" && user.role === "ADMIN" ? (
+          <GestionPersonal onClose={() => setView("home")} />
+        ) : view === "cobros" && user.role === "ADMIN" ? (
+          <Cobros onClose={() => setView("home")} />
+        ) : view === "pagos" && user.role === "CLIENT" ? (
+          <MisPagos onClose={() => setView("home")} />
         ) : user.role === "ADMIN" ? (
           <div className="role-grid" aria-label="Funciones de administración">
             <button
@@ -94,6 +127,44 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
               <h2>Reservas</h2>
               <p>Consultá las reservas y rechazá las que no puedas atender.</p>
             </button>
+            <button
+              className="role-card role-card-action"
+              onClick={() => setView("personal")}
+            >
+              <span className="role-label">Administración</span>
+              <h2>Personal</h2>
+              <p>Registrá y actualizá los perfiles profesionales.</p>
+            </button>
+            <button
+              className="role-card role-card-action"
+              onClick={() => setView("cobros")}
+            >
+              <span className="role-label">Administración</span>
+              <h2>Cobros</h2>
+              <p>Registrá y consultá los cobros de los turnos confirmados.</p>
+            </button>
+          </div>
+        ) : user.role === "BARBER" ? (
+          <div className="role-grid" aria-label="Funciones del peluquero">
+            <button
+              className="role-card role-card-action"
+              onClick={() => setView("peluquero")}
+            >
+              <span className="role-label">Tu trabajo</span>
+              <h2>Agenda y turnos</h2>
+              <p>
+                Consultá tu agenda, gestioná turnos pendientes y revisá tus
+                indicadores.
+              </p>
+            </button>
+            <button
+              className="role-card role-card-action"
+              onClick={() => setView("peluquero-perfil")}
+            >
+              <span className="role-label">Tu perfil</span>
+              <h2>Mi perfil</h2>
+              <p>Consultá y actualizá los datos de tu perfil profesional.</p>
+            </button>
           </div>
         ) : (
           <div className="role-grid" aria-label="Funciones de cliente">
@@ -111,7 +182,18 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             >
               <span className="role-label">Tu agenda</span>
               <h2>Mis turnos</h2>
-              <p>Revisá el estado de tus reservas y cancelá las que no puedas asistir.</p>
+              <p>
+                Revisá el estado de tus reservas y cancelá las que no puedas
+                asistir.
+              </p>
+            </button>
+            <button
+              className="role-card role-card-action"
+              onClick={() => setView("pagos")}
+            >
+              <span className="role-label">Tu agenda</span>
+              <h2>Mis pagos</h2>
+              <p>Consultá el detalle de los cobros de tus turnos.</p>
             </button>
           </div>
         )}
@@ -124,7 +206,9 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
           <p className="status-note">
             {user.role === "CLIENT"
               ? "Entrá en Reservar turno para hacer una reserva o consultar tus turnos registrados."
-              : "Servicios administra el catálogo, Disponibilidad configura la jornada laboral y Reservas permite consultar y rechazar turnos."}
+              : user.role === "BARBER"
+                ? "Entrá en Agenda y turnos para consultar tus asignaciones, gestionar turnos pendientes y revisar tus indicadores."
+                : "Servicios administra el catálogo, Disponibilidad configura la jornada laboral y Reservas permite consultar y rechazar turnos."}
           </p>
         )}
       </section>

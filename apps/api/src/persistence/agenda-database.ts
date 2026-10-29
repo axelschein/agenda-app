@@ -41,6 +41,11 @@ export class AgendaDatabase implements OnModuleDestroy {
       }
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS peluquero (id TEXT PRIMARY KEY NOT NULL, nombre TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS perfil_peluquero (
+          peluquero_id TEXT PRIMARY KEY NOT NULL REFERENCES peluquero(id),
+          telefono TEXT NOT NULL DEFAULT '',
+          activo INTEGER NOT NULL DEFAULT 1 CHECK(activo IN (0,1))
+        );
         CREATE TABLE IF NOT EXISTS cliente (id TEXT PRIMARY KEY NOT NULL, email TEXT NOT NULL UNIQUE);
         CREATE TABLE IF NOT EXISTS horario_laboral (
           peluquero_id TEXT NOT NULL REFERENCES peluquero(id), dia INTEGER NOT NULL CHECK(dia BETWEEN 0 AND 6),
@@ -62,6 +67,17 @@ export class AgendaDatabase implements OnModuleDestroy {
         );
       `);
       const turnColumns = this.db.prepare("PRAGMA table_info(turno)").all() as { name: string }[];
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS auditoria_usuario (
+          id INTEGER PRIMARY KEY,
+          usuario_id TEXT NOT NULL REFERENCES peluquero(id),
+          actor_email TEXT NOT NULL,
+          accion TEXT NOT NULL,
+          detalle TEXT NOT NULL,
+          ocurrido_en TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS auditoria_usuario_usuario ON auditoria_usuario(usuario_id, ocurrido_en);
+      `);
       if (!turnColumns.some((column) => column.name === "servicio_nombre")) {
         this.db.exec("ALTER TABLE turno ADD COLUMN servicio_nombre TEXT NOT NULL DEFAULT ''");
         this.db.exec("UPDATE turno SET servicio_nombre=(SELECT nombre FROM servicio WHERE servicio.id=turno.servicio_id)");
@@ -94,6 +110,23 @@ export class AgendaDatabase implements OnModuleDestroy {
         AND t.estado <> 'Cancelado' AND t.inicio < NEW.inicio + NEW.duracion_minutos
         AND NEW.inicio < t.inicio + t.duracion_minutos
       ) BEGIN SELECT RAISE(ABORT, 'HORARIO_OCUPADO'); END;
+      CREATE TABLE IF NOT EXISTS pago (
+        id TEXT PRIMARY KEY NOT NULL,
+        turno_id TEXT NOT NULL REFERENCES turno(id),
+        solicitud_id TEXT NOT NULL,
+        metodo TEXT NOT NULL CHECK(metodo IN ('Efectivo','Transferencia')),
+        monto_centavos INTEGER NOT NULL CHECK(monto_centavos >= 0),
+        estado TEXT NOT NULL DEFAULT 'Registrado' CHECK(estado IN ('Registrado','Anulado')),
+        motivo_anulacion TEXT NOT NULL DEFAULT '',
+        creado_en TEXT NOT NULL,
+        UNIQUE(turno_id, solicitud_id)
+      );
+      -- Un solo cobro activo por turno; tras anular se puede volver a cobrar.
+      CREATE UNIQUE INDEX IF NOT EXISTS pago_turno_activo ON pago(turno_id) WHERE estado <> 'Anulado';
+      CREATE TABLE IF NOT EXISTS auditoria_pago (
+        id INTEGER PRIMARY KEY, pago_id TEXT NOT NULL REFERENCES pago(id),
+        accion TEXT NOT NULL, ocurrido_en TEXT NOT NULL
+      );
     `);
   }
   transaction<T>(action: () => T): T {

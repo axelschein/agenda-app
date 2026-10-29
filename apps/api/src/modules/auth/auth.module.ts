@@ -5,8 +5,10 @@ import { RolesGuard } from "./roles.guard.js";
 import { SessionAuthGuard } from "./session-auth.guard.js";
 import { SessionService } from "./infrastructure/session.service.js";
 import { UserAllowlistService } from "./infrastructure/user-allowlist.service.js";
+import { UsersModule } from "../users/users.module.js";
 
 @Module({
+  imports: [UsersModule],
   controllers: [AuthController],
   providers: [
     AutenticacionControl,

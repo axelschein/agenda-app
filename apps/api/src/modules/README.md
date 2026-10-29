@@ -16,12 +16,12 @@ Las entidades no se registran como providers de Nest salvo que una necesidad té
 
 Las Boundary de interfaz (`AutenticacionUI`, `ReservaTurnoUI` y `TurnosUI`) corresponden a Next. Los controladores HTTP de Nest son la frontera de la API. `packages/shared` contiene contratos de intercambio, no entidades internas.
 
-La implementación actual de PP2-10 utiliza `AutenticacionControl`. Las otras entidades modelan clases del diagrama, sin reglas de reserva, transiciones de estado o persistencia que las fuentes dejan pendientes. `Peluquero` está modelado como usuario del dominio, pero no puede iniciar sesión en el MVP PP2-10.
+La implementación actual de PP2-10 utiliza `AutenticacionControl` y habilita `ADMIN` y `CLIENT` para el MVP. PP2-22 añade acceso local para `BARBER`, vinculado por `peluqueroId` en `AUTH_USERS_JSON`; el perfil profesional debe existir y permanecer activo. No se transforma la allowlist en una tabla genérica ni se cambian las clases del dominio.
 
 ## Autenticación local
 
-El módulo `auth` permite iniciar y cerrar sesión para cuentas `ADMIN` y `CLIENT` declaradas en el archivo `.env` de la raíz del repositorio. Si no existe, copiá `.env.example` a `.env`, generá un hash con `npm run auth:hash-password --workspace=@agenda-app/api` e incluí las cuentas en `AUTH_USERS_JSON` con los campos `email`, `role` y `passwordHash`. El hash usa scrypt; no guardes contraseñas en texto plano.
+El módulo `auth` permite iniciar y cerrar sesión para cuentas `ADMIN`, `CLIENT` y `BARBER` declaradas en `.env` en la raíz del repositorio. Para `BARBER`, agregá `peluqueroId` con el ID del perfil. Si el perfil se crea desde la pantalla Personal, copiá ese ID a la configuración de la cuenta y generá el `passwordHash` con `npm run auth:hash-password --workspace=@agenda-app/api`. El hash usa scrypt; no guardes contraseñas en texto plano.
 
-La API firma una cookie de sesión `HttpOnly` con una clave definida en `AUTH_SESSION_SECRET`. La sesión dura ocho horas y la API vuelve a comprobar que el usuario y rol sigan en la lista permitida. `RolesGuard` y el decorador `@Roles(...)` quedan disponibles para proteger los controladores de cada función cuando se implementen.
+La API firma una cookie de sesión `HttpOnly` con una clave definida en `AUTH_SESSION_SECRET`. La sesión dura ocho horas y la API vuelve a comprobar la cuenta, el rol y la vigencia del perfil profesional en cada solicitud. `RolesGuard` y el decorador `@Roles(...)` protegen las operaciones por función.
 
 El archivo `.env` no se versiona. El acceso está limitado a las cuentas enumeradas; si la lista queda vacía, no se acepta ningún inicio de sesión.
