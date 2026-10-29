@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import type { AuthResponse, AuthenticatedUser } from "@agenda-app/shared";
 
 const SESSION_COOKIE = "agenda_session";
-// En el servidor usamos una URL interna si está definida; si no, la pública.
+// Las llamadas del servidor pueden usar una URL interna; las del navegador
+// pasan por el proxy de Next y no usan esta URL.
 const API_URL =
   process.env.API_URL_INTERNAL ??
   process.env.NEXT_PUBLIC_API_URL ??
