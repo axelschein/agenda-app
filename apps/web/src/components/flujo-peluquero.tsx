@@ -106,6 +106,10 @@ export function FlujoPeluquero({ onClose, initialSection = "agenda" }: { onClose
     }
   }
 
+  function actualizarFecha(value: string) {
+    if (esFechaValida(value)) setFecha(value);
+  }
+
   return (
     <section className="booking" aria-labelledby="barber-title">
       <header className="booking-header">
@@ -125,7 +129,7 @@ export function FlujoPeluquero({ onClose, initialSection = "agenda" }: { onClose
         <>
           <div className="barber-filters">
             <label className="booking-label date-field" htmlFor="barber-date">Fecha de inicio</label>
-            <input id="barber-date" type="date" value={fecha} onChange={(event) => setFecha(event.target.value)} />
+            <input id="barber-date" type="date" value={fecha} onChange={(event) => actualizarFecha(event.target.value)} />
             <label className="barber-check"><input type="checkbox" checked={semanal} onChange={(event) => setSemanal(event.target.checked)} /> Ver semana</label>
             <p className="booking-note">{range.desde === range.hasta ? dateLabel(range.desde) : `${dateLabel(range.desde)} – ${dateLabel(range.hasta)}`}</p>
           </div>
@@ -168,7 +172,7 @@ export function FlujoPeluquero({ onClose, initialSection = "agenda" }: { onClose
       {section === "indicadores" && (loading ? <p role="status">Cargando indicadores…</p> : indicators && (
         <div className="barber-indicators">
           <label className="booking-label date-field" htmlFor="indicator-date">Día</label>
-          <input id="indicator-date" type="date" value={fecha} onChange={(event) => setFecha(event.target.value)} />
+          <input id="indicator-date" type="date" value={fecha} onChange={(event) => actualizarFecha(event.target.value)} />
           <dl className="indicator-grid">
             <div><dt>Turnos completados</dt><dd>{indicators.turnosCompletados}</dd></div>
             <div><dt>Ingresos estimados</dt><dd>{money(indicators.ingresosEstimados)}</dd></div>
@@ -186,11 +190,18 @@ export function FlujoPeluquero({ onClose, initialSection = "agenda" }: { onClose
 }
 
 function dateRange(value: string, weekly: boolean): { desde: string; hasta: string } {
-  if (!weekly) return { desde: value, hasta: value };
-  const date = new Date(`${value}T12:00:00Z`);
+  const fechaSegura = esFechaValida(value) ? value : businessToday();
+  if (!weekly) return { desde: fechaSegura, hasta: fechaSegura };
+  const date = new Date(`${fechaSegura}T12:00:00Z`);
   const offset = (date.getUTCDay() + 6) % 7;
   date.setUTCDate(date.getUTCDate() - offset);
   const desde = date.toISOString().slice(0, 10);
   date.setUTCDate(date.getUTCDate() + 6);
   return { desde, hasta: date.toISOString().slice(0, 10) };
+}
+
+function esFechaValida(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
