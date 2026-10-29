@@ -20,4 +20,14 @@ export class GestionReservasController {
   rechazar(@Param("id") id: string) {
     return this.gestion.rechazar(id);
   }
+
+  @Patch(":id/confirm")
+  confirmar(@Param("id") id: string) {
+    return this.gestion.confirmar(id);
+  }
+
+  @Patch(":id/complete")
+  completar(@Param("id") id: string) {
+    return this.gestion.completar(id);
+  }
 }

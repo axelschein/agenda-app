@@ -63,6 +63,27 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
     }
   }
 
+  async function avanzar(reserva: ReservationAdminView, endpoint: string) {
+    if (busyId) return;
+    setBusyId(reserva.id);
+    setError("");
+    try {
+      const actualizada = await agendaRequest<ReservationAdminView>(
+        `/reservations/${encodeURIComponent(reserva.id)}/${endpoint}`,
+        { method: "PATCH" },
+      );
+      setReservas((todas) =>
+        todas.map((t) => (t.id === actualizada.id ? actualizada : t)),
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No se pudo actualizar el turno.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
   return (
     <section className="booking" aria-labelledby="reservas-title">
       <header className="booking-header">
@@ -98,16 +119,38 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
             {dateLabel(r.fecha)} · {r.horaInicio} hs · {money(r.total)}
           </p>
           {r.motivoCancelacion && <p>Motivo: {r.motivoCancelacion}</p>}
-          {r.estado === "Pendiente" && (
+          {(r.estado === "Pendiente" || r.estado === "Confirmado") && (
             <div className="service-actions">
-              <button
-                className="button button-danger"
-                type="button"
-                disabled={busyId === r.id}
-                onClick={() => void rechazar(r)}
-              >
-                {busyId === r.id ? "Rechazando…" : "Rechazar"}
-              </button>
+              {r.estado === "Pendiente" && (
+                <button
+                  className="button"
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => void avanzar(r, "confirm")}
+                >
+                  {busyId === r.id ? "Procesando…" : "Confirmar"}
+                </button>
+              )}
+              {r.estado === "Confirmado" && (
+                <button
+                  className="button"
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => void avanzar(r, "complete")}
+                >
+                  {busyId === r.id ? "Procesando…" : "Marcar completado"}
+                </button>
+              )}
+              {r.estado === "Pendiente" && (
+                <button
+                  className="button button-danger"
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => void rechazar(r)}
+                >
+                  {busyId === r.id ? "Rechazando…" : "Rechazar"}
+                </button>
+              )}
             </div>
           )}
         </article>

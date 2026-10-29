@@ -94,6 +94,23 @@ export class AgendaDatabase implements OnModuleDestroy {
         AND t.estado <> 'Cancelado' AND t.inicio < NEW.inicio + NEW.duracion_minutos
         AND NEW.inicio < t.inicio + t.duracion_minutos
       ) BEGIN SELECT RAISE(ABORT, 'HORARIO_OCUPADO'); END;
+      CREATE TABLE IF NOT EXISTS pago (
+        id TEXT PRIMARY KEY NOT NULL,
+        turno_id TEXT NOT NULL REFERENCES turno(id),
+        solicitud_id TEXT NOT NULL,
+        metodo TEXT NOT NULL CHECK(metodo IN ('Efectivo','Transferencia')),
+        monto_centavos INTEGER NOT NULL CHECK(monto_centavos >= 0),
+        estado TEXT NOT NULL DEFAULT 'Registrado' CHECK(estado IN ('Registrado','Anulado')),
+        motivo_anulacion TEXT NOT NULL DEFAULT '',
+        creado_en TEXT NOT NULL,
+        UNIQUE(turno_id, solicitud_id)
+      );
+      -- Un solo cobro activo por turno; tras anular se puede volver a cobrar.
+      CREATE UNIQUE INDEX IF NOT EXISTS pago_turno_activo ON pago(turno_id) WHERE estado <> 'Anulado';
+      CREATE TABLE IF NOT EXISTS auditoria_pago (
+        id INTEGER PRIMARY KEY, pago_id TEXT NOT NULL REFERENCES pago(id),
+        accion TEXT NOT NULL, ocurrido_en TEXT NOT NULL
+      );
     `);
   }
   transaction<T>(action: () => T): T {

@@ -9,13 +9,22 @@ import { ReservaTurno } from "../components/reserva-turno";
 import { HorariosLaborales } from "../components/horarios-laborales";
 import { GestionReservas } from "../components/gestion-reservas";
 import { MisTurnos } from "../components/mis-turnos";
+import { Cobros } from "../components/cobros";
+import { MisPagos } from "../components/mis-pagos";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 export default function HomePage() {
   const [view, setView] = useState<
-    "home" | "booking" | "hours" | "services" | "reservas" | "mis-turnos"
+    | "home"
+    | "booking"
+    | "hours"
+    | "services"
+    | "reservas"
+    | "mis-turnos"
+    | "cobros"
+    | "pagos"
   >("home");
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [email, setEmail] = useState("");
@@ -127,6 +136,10 @@ export default function HomePage() {
             <GestionReservas onClose={() => setView("home")} />
           ) : view === "mis-turnos" && user.role === "CLIENT" ? (
             <MisTurnos onClose={() => setView("home")} />
+          ) : view === "cobros" && user.role === "ADMIN" ? (
+            <Cobros onClose={() => setView("home")} />
+          ) : view === "pagos" && user.role === "CLIENT" ? (
+            <MisPagos onClose={() => setView("home")} />
           ) : user.role === "ADMIN" ? (
             <div className="role-grid" aria-label="Funciones de administración">
               <button
@@ -153,6 +166,14 @@ export default function HomePage() {
                 <h2>Reservas</h2>
                 <p>Consultá las reservas y rechazá las que no puedas atender.</p>
               </button>
+              <button
+                className="role-card role-card-action"
+                onClick={() => setView("cobros")}
+              >
+                <span className="role-label">Administración</span>
+                <h2>Cobros</h2>
+                <p>Registrá y consultá los cobros de los turnos confirmados.</p>
+              </button>
             </div>
           ) : (
             <div className="role-grid" aria-label="Funciones de cliente">
@@ -171,6 +192,14 @@ export default function HomePage() {
                 <span className="role-label">Tu agenda</span>
                 <h2>Mis turnos</h2>
                 <p>Revisá el estado de tus reservas y cancelá las que no puedas asistir.</p>
+              </button>
+              <button
+                className="role-card role-card-action"
+                onClick={() => setView("pagos")}
+              >
+                <span className="role-label">Tu agenda</span>
+                <h2>Mis pagos</h2>
+                <p>Consultá el detalle de los cobros de tus turnos.</p>
               </button>
             </div>
           )}
