@@ -76,10 +76,10 @@ export function GestionPersonal({ onClose }: { onClose: () => void }) {
   return (
     <section className="booking" aria-labelledby="staff-title">
       <header className="booking-header">
-        <div><p className="eyebrow">Administración</p><h2 id="staff-title">Personal profesional</h2></div>
-        <button className="button button-secondary" onClick={onClose}>Volver</button>
+        <button className="back-button" aria-label="Volver" onClick={onClose}>‹</button>
+        <div><h2 id="staff-title">Personal profesional</h2></div>
       </header>
-      <form className="barber-profile" onSubmit={create}>
+      <form className="barber-profile barber-profile-wide" onSubmit={create}>
         <h3>Agregar peluquero/a</h3>
         <label htmlFor="new-staff-name">Nombre</label>
         <input id="new-staff-name" value={nombre} onChange={(event) => setNombre(event.target.value)} required />

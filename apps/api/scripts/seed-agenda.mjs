@@ -45,13 +45,13 @@ try {
   for (const pel of ["ana", "marco", "lucia"])
     for (let dia = 1; dia <= 6; dia++) horario.run(pel, dia, 540, 1080);
 
-  // Clientes de demostración (la identidad real de login viene de AUTH_USERS_JSON).
+  // Cliente de demostración vinculado a la cuenta local cliente@demo.local.
   const cliente = db.prepare(
-    "INSERT INTO cliente VALUES (?,?) ON CONFLICT(id) DO NOTHING",
+    "INSERT INTO cliente VALUES (?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email",
   );
   for (const row of [
     ["c-juan", "juan@demo.com"],
-    ["c-sofia", "sofia@demo.com"],
+    ["c-sofia", "cliente@demo.local"],
     ["c-lucas", "lucas@demo.com"],
   ])
     cliente.run(...row);
@@ -72,6 +72,14 @@ try {
     ["t-08", "c-sofia", "lucia", "corte-barba", 2, 600, "Confirmado"],
     ["t-09", "c-lucas", "marco", "barba", -3, 540, "Completado"],
     ["t-10", "c-juan", "ana", "coloracion", 5, 660, "Pendiente"],
+    // Turnos completados de hoy y ayer para que el panel profesional tenga
+    // datos visibles al consultar sus indicadores diarios.
+    ["t-11", "c-juan", "ana", "corte", 0, 540, "Completado"],
+    ["t-12", "c-sofia", "ana", "barba", -1, 600, "Completado"],
+    ["t-13", "c-sofia", "marco", "corte-barba", 0, 540, "Completado"],
+    ["t-14", "c-lucas", "marco", "corte", -1, 600, "Completado"],
+    ["t-15", "c-lucas", "lucia", "coloracion", 0, 540, "Completado"],
+    ["t-16", "c-juan", "lucia", "barba", -1, 600, "Completado"],
   ];
   const turno = db.prepare(
     "INSERT INTO turno (id,solicitud_id,cliente_id,servicio_id,peluquero_id,fecha,inicio,duracion_minutos,precio_centavos,servicio_nombre,servicio_duracion_minutos,estado,creado_en) VALUES (?,?,?,?,?,?,?,60,?,?,?,?,?) ON CONFLICT(id) DO NOTHING",
@@ -108,6 +116,12 @@ try {
     ["pg-03", "t-03", "Efectivo"],
     ["pg-04", "t-04", "Transferencia"],
     ["pg-05", "t-06", "Efectivo"],
+    ["pg-11", "t-11", "Efectivo"],
+    ["pg-12", "t-12", "Transferencia"],
+    ["pg-13", "t-13", "Efectivo"],
+    ["pg-14", "t-14", "Transferencia"],
+    ["pg-15", "t-15", "Efectivo"],
+    ["pg-16", "t-16", "Transferencia"],
   ]) {
     const t = db
       .prepare("SELECT precio_centavos FROM turno WHERE id=?")

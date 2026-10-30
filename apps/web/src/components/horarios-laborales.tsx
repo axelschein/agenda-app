@@ -202,6 +202,7 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
       <label className="booking-label date-field">
         Peluquero/a
         <select
+          className="professional-select"
           value={barber}
           disabled={saving}
           onChange={(e) => setBarber(e.target.value)}
@@ -220,7 +221,12 @@ export function HorariosLaborales({ onClose }: { onClose: () => void }) {
           {error}
         </p>
       )}
-      {notice && <p role="status">{notice}</p>}
+      {notice && (
+        <p role="status" className="availability-success-note">
+          <span aria-hidden="true">✓</span>
+          {notice}
+        </p>
+      )}
       {barber && loaded && !loading && noFit && (
         <p role="alert" className="error-message">
           Ninguna franja de este profesional alcanza para un bloque de{" "}

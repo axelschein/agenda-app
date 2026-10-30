@@ -27,6 +27,10 @@ export class IndicadoresControl {
     const hasta = validarFecha(hastaValue);
     if (hasta < desde)
       throw new BadRequestException("El período 'hasta' no puede ser anterior a 'desde'.");
+    const diasDelPeriodo =
+      (Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / 86_400_000 + 1;
+    if (diasDelPeriodo > 31)
+      throw new BadRequestException("El período no puede superar los 31 días.");
     return {
       resumen: this.resumen(desde, hasta),
       serviciosMasPedidos: this.serviciosMasPedidos(desde, hasta),

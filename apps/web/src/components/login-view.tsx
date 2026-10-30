@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { API_URL } from "./agenda-api";
 
@@ -49,18 +50,12 @@ export function LoginView() {
     <main className="page-shell">
       <section className="login-layout" aria-labelledby="page-title">
         <div className="intro-panel">
-          <p className="eyebrow">AgendaApp · MVP</p>
+          <Image className="login-logo" src="/agendaapp-icon.png" alt="" width={112} height={112} priority />
+          <p className="eyebrow">AgendaApp</p>
           <h1 id="page-title">Tu agenda, en orden.</h1>
           <p className="intro">
             Ingresá para acceder a las funciones habilitadas para tu cuenta.
           </p>
-          <div
-            className="role-grid role-grid-intro"
-            aria-label="Perfiles disponibles"
-          >
-            <div className="role-chip">Cliente</div>
-            <div className="role-chip">Administrador</div>
-          </div>
         </div>
         <form className="login-card" onSubmit={handleLogin}>
           <h2>Iniciar sesión</h2>
