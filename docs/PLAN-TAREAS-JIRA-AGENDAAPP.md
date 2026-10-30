@@ -1,6 +1,6 @@
 # Borrador de tareas para Jira — AgendaApp
 
-Este documento resume los cambios pendientes del checkout principal y propone cómo separarlos en tickets. **Todavía no se crearon issues en Jira.** La modificación local de autenticación con contraseña hardcodeada queda fuera del commit y de esta propuesta.
+Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo separarlo en tickets. **Todavía no se crearon issues en Jira.** La modificación local de autenticación con contraseña hardcodeada queda fuera del commit, del PR y de esta propuesta.
 
 ## Épica sugerida: Mejoras de navegación, indicadores y experiencia de AgendaApp
 
@@ -48,11 +48,21 @@ Este documento resume los cambios pendientes del checkout principal y propone c�
 
 **Objetivo:** mostrar tendencias sin amontonar las etiquetas cuando el período tiene muchos días.
 
-**Alcance:** gráfico lineal de turnos completados por día para el peluquero y gráfico de barras horizontales de turnos por día para administración; etiquetas espaciadas y nota de rating sin estrellas cuando no hay datos.
+**Alcance:** gráficos lineales por día para peluqueros y administración; etiquetas espaciadas y nota de rating sin estrellas cuando no hay datos.
 
 **Aceptación:** los gráficos usan los datos filtrados; las fechas se leen en períodos largos; el rating vacío muestra “Sin datos” sin estrellas grises.
 
 **Archivos:** `apps/web/src/components/flujo-peluquero.tsx`, `apps/web/src/components/indicadores.tsx`, `apps/web/src/app/globals.css`.
+
+### 9. Alinear el rango consultado con el gráfico de administración
+
+**Objetivo:** que el período seleccionado y el eje temporal del gráfico representen las mismas fechas.
+
+**Alcance:** completar con cero los días sin turnos; limitar cada consulta a 31 días inclusive en los controles y en la API; mostrar el rango aplicado.
+
+**Aceptación:** una consulta del 1 al 30 de octubre dibuja todos los días de ese rango, incluidos los días sin actividad; no se puede consultar un período mayor a 31 días; la API rechaza rangos de más de 31 días.
+
+**Archivos:** `apps/web/src/components/indicadores.tsx`, `apps/web/src/app/globals.css`, `apps/api/src/modules/reports/application/indicadores.control.ts` y test de reportes.
 
 ### 6. Pulir formularios y pantallas de administración
 
@@ -84,9 +94,9 @@ Este documento resume los cambios pendientes del checkout principal y propone c�
 
 **Archivos:** `scripts/iniciar-agenda.sh`, `scripts/reiniciar-agenda.sh`, `scripts/INSTRUCCIONES-REINICIO.md`.
 
-## Verificación ejecutada para esta entrega
+## Verificación ejecutada en `feature/fixes-ui`
 
 - Pruebas unitarias API: 7 suites, 39 pruebas aprobadas.
-- Pruebas de integración API: 6 suites, 26 pruebas aprobadas.
+- Pruebas de integración API: 6 suites, 27 pruebas aprobadas, incluida la validación del máximo de 31 días.
 - Build de API y web: aprobado con npm configurado para ejecutar scripts mediante `cmd.exe` en Windows.
 - La aplicación no se inició durante esta verificación.

@@ -13,19 +13,45 @@ function hace(dias: number): string {
   }).format(d);
 }
 
+function desplazarFecha(fecha: string, dias: number): string {
+  if (!fecha) return "";
+  const date = new Date(`${fecha}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setUTCDate(date.getUTCDate() + dias);
+  return date.toISOString().slice(0, 10);
+}
+
+function diasEntre(desde: string, hasta: string): number {
+  return (Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / 86_400_000 + 1;
+}
+
+function completarDias(
+  desde: string,
+  hasta: string,
+  turnosPorDia: PanelIndicadores["turnosPorDia"],
+): PanelIndicadores["turnosPorDia"] {
+  const cantidades = new Map(turnosPorDia.map(({ fecha, cantidad }) => [fecha, cantidad]));
+  const dias: PanelIndicadores["turnosPorDia"] = [];
+  for (let fecha = desde; fecha <= hasta; fecha = desplazarFecha(fecha, 1)) {
+    dias.push({ fecha, cantidad: cantidades.get(fecha) ?? 0 });
+  }
+  return dias;
+}
+
 export function Indicadores({ onClose }: { onClose: () => void }) {
-  const [desde, setDesde] = useState(hace(30));
-  const [hasta, setHasta] = useState(businessToday());
+  const [initialPeriod] = useState(() => ({ desde: hace(30), hasta: businessToday() }));
+  const [desde, setDesde] = useState(initialPeriod.desde);
+  const [hasta, setHasta] = useState(initialPeriod.hasta);
+  const [requestedPeriod, setRequestedPeriod] = useState(initialPeriod);
   const [data, setData] = useState<PanelIndicadores | null>(null);
-  const [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
-    [reload, setReload] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
-    const params = new URLSearchParams({ desde, hasta });
+    const params = new URLSearchParams(requestedPeriod);
     agendaRequest<PanelIndicadores>("/reports/indicators?" + params)
       .then((r) => {
         if (active) setData(r);
@@ -39,11 +65,33 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reload]);
+  }, [requestedPeriod]);
 
   const r = data?.resumen;
-  const dailyTurnosMax = Math.max(1, ...(data?.turnosPorDia.map((d) => d.cantidad) ?? [0]));
+  const dailyTurnos = completarDias(requestedPeriod.desde, requestedPeriod.hasta, data?.turnosPorDia ?? []);
+  const dailyTurnosMax = Math.max(0, ...dailyTurnos.map((d) => d.cantidad));
+  const dailyTurnosScale = Math.max(1, dailyTurnosMax);
+  const maxDesde = desplazarFecha(hasta, -30);
+  const maxHasta = desplazarFecha(desde, 30);
+  const periodoValido = desde <= hasta && diasEntre(desde, hasta) <= 31;
+  const chartWidth = 1000;
+  const chartTop = 20;
+  const chartBottom = 190;
+  const chartLeft = 46;
+  const chartRight = 982;
+  const chartHeight = chartBottom - chartTop;
+  const chartPoints = dailyTurnos.map((day, index) => ({
+    ...day,
+    x: dailyTurnos.length <= 1
+      ? (chartLeft + chartRight) / 2
+      : chartLeft + (index / (dailyTurnos.length - 1)) * (chartRight - chartLeft),
+    y: chartBottom - (day.cantidad / dailyTurnosScale) * chartHeight,
+  }));
+  const chartPolyline = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
+  const chartLabelIndexes = dailyTurnos.length <= 7
+    ? dailyTurnos.map((_, index) => index)
+    : [...new Set([0, Math.round((dailyTurnos.length - 1) / 3), Math.round(((dailyTurnos.length - 1) * 2) / 3), dailyTurnos.length - 1])];
+  const chartYTicks = [...new Set([0, Math.ceil(dailyTurnosScale / 3), Math.ceil((dailyTurnosScale * 2) / 3), dailyTurnosScale])];
   return (
     <section className="booking" aria-labelledby="indic-title">
       <header className="booking-header">
@@ -53,21 +101,35 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
         <h2 id="indic-title">Indicadores</h2>
       </header>
       <p className="form-help">
-        Indicadores y reportes del negocio en el período elegido.
+        Indicadores y reportes del {dateLabel(requestedPeriod.desde)} al {dateLabel(requestedPeriod.hasta)}.
       </p>
       <div className="report-filters">
         <label className="booking-label date-field">
           Desde
-          <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+          <input type="date" value={desde} min={maxDesde} max={hasta} onChange={(e) => setDesde(e.target.value)} />
         </label>
         <label className="booking-label date-field">
           Hasta
-          <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+          <input type="date" value={hasta} min={desde} max={maxHasta} onChange={(e) => setHasta(e.target.value)} />
         </label>
-        <button className="button" type="button" onClick={() => setReload((n) => n + 1)}>
+        <button
+          className="button"
+          type="button"
+          onClick={() => {
+            if (!periodoValido) {
+              setError("El período no puede superar los 31 días.");
+              return;
+            }
+            setLoading(true);
+            setError("");
+            setRequestedPeriod({ desde, hasta });
+          }}
+          disabled={!periodoValido || (desde === requestedPeriod.desde && hasta === requestedPeriod.hasta && loading)}
+        >
           Consultar
         </button>
       </div>
+      <p className="form-help report-range-help">El período puede incluir hasta 31 días.</p>
 
       {loading && <p role="status">Calculando indicadores…</p>}
       {error && (
@@ -132,18 +194,53 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
           )}
 
           <h3 className="booking-label report-heading">Turnos por día</h3>
-          {data!.turnosPorDia.length ? (
-            <ul className="admin-daily-chart" aria-label="Turnos por día en el período seleccionado">
-              {data!.turnosPorDia.map((d) => (
-                <li key={d.fecha}>
-                  <span className="admin-daily-chart-date">{dateLabel(d.fecha)}</span>
-                  <span className="admin-daily-chart-track" aria-hidden="true">
-                    <span style={{ width: `${(d.cantidad / dailyTurnosMax) * 100}%` }} />
-                  </span>
-                  <strong>{d.cantidad}</strong>
-                </li>
-              ))}
-            </ul>
+          {dailyTurnos.length ? (
+            <figure className="admin-line-chart">
+              <figcaption>
+                <strong>Turnos por día</strong>
+                <span>Actividad en el período</span>
+              </figcaption>
+              <svg
+                viewBox={`0 0 ${chartWidth} 244`}
+                role="img"
+                aria-label={`Turnos por día entre ${dateLabel(requestedPeriod.desde)} y ${dateLabel(requestedPeriod.hasta)}. Máximo: ${dailyTurnosMax} turnos en un día.`}
+                preserveAspectRatio="none"
+              >
+                <g className="admin-line-chart-grid" aria-hidden="true">
+                  {chartYTicks.map((tick) => {
+                    const y = chartBottom - (tick / dailyTurnosScale) * chartHeight;
+                    return (
+                      <g key={tick}>
+                        <line x1={chartLeft} x2={chartRight} y1={y} y2={y} />
+                        <text x={chartLeft - 12} y={y + 4} textAnchor="end">{tick}</text>
+                      </g>
+                    );
+                  })}
+                </g>
+                {chartPoints.length > 1 && (
+                  <polyline className="admin-line-chart-line" points={chartPolyline} />
+                )}
+                {chartPoints.map((point) => (
+                  <circle className="admin-line-chart-point" cx={point.x} cy={point.y} r="4" key={point.fecha}>
+                    <title>{dateLabel(point.fecha)}: {point.cantidad} turno(s)</title>
+                  </circle>
+                ))}
+                {chartLabelIndexes.map((index) => {
+                  const point = chartPoints[index];
+                  if (!point) return null;
+                  const shortDate = new Intl.DateTimeFormat("es-AR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    timeZone: "UTC",
+                  }).format(new Date(`${point.fecha}T12:00:00Z`));
+                  return (
+                    <text className="admin-line-chart-date" x={point.x} y="224" textAnchor="middle" key={point.fecha}>
+                      {shortDate}
+                    </text>
+                  );
+                })}
+              </svg>
+            </figure>
           ) : (
             <p>Sin datos en el período.</p>
           )}

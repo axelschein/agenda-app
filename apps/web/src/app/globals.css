@@ -516,6 +516,10 @@ h1 {
   margin: 0;
   padding: 10px 18px;
 }
+.report-range-help {
+  margin: -14px 0 24px;
+  font-size: 0.88rem;
+}
 .indicator-summary {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -1223,56 +1227,71 @@ h1 {
   font-size: 0.85rem;
   text-align: center;
 }
-.admin-daily-chart {
-  display: grid;
-  gap: 14px;
+.admin-line-chart {
   margin: 0 0 20px;
-  padding: 18px 20px;
+  padding: 18px 20px 12px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
-  list-style: none;
 }
-.admin-daily-chart li {
-  display: grid;
-  grid-template-areas: "date track count";
-  grid-template-columns: minmax(145px, 1fr) minmax(80px, 2fr) 30px;
-  align-items: center;
-  gap: 14px;
+.admin-line-chart figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
-.admin-daily-chart-date {
-  grid-area: date;
+.admin-line-chart figcaption strong {
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
-.admin-daily-chart-track {
-  grid-area: track;
+.admin-line-chart figcaption span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.admin-line-chart svg {
   display: block;
-  height: 10px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #f2eff8;
+  width: 100%;
+  height: clamp(190px, 25vw, 260px);
+  overflow: visible;
 }
-.admin-daily-chart-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
+.admin-line-chart-grid line {
+  stroke: #eeeaf5;
+  stroke-width: 1;
 }
-.admin-daily-chart li strong {
-  grid-area: count;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+.admin-line-chart-grid text,
+.admin-line-chart-date {
+  fill: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+.admin-line-chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.admin-line-chart-point {
+  fill: #fff;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
 }
 @media (max-width: 520px) {
-  .admin-daily-chart li {
-    grid-template-areas: "date count" "track track";
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px 14px;
+  .admin-line-chart {
+    padding: 16px 12px 10px;
   }
-  .admin-daily-chart-track {
-    width: 100%;
+  .admin-line-chart figcaption {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .admin-line-chart-date,
+  .admin-line-chart-grid text {
+    font-size: 14px;
   }
 }
 .availability-success-note {

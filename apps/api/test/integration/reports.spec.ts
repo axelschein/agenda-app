@@ -159,4 +159,13 @@ describe("Indicadores y reportes de Administración (PP2-40)", () => {
       .set("Cookie", admin)
       .expect(400);
   });
+
+  it("rechaza períodos de más de 31 días", async () => {
+    const admin = await login("admin@example.com");
+    await request(app.getHttpServer())
+      .get("/reports/indicators")
+      .query({ desde: "2099-03-01", hasta: "2099-04-01" })
+      .set("Cookie", admin)
+      .expect(400);
+  });
 });
