@@ -1,10 +1,10 @@
-# Borrador de tareas para Jira — AgendaApp
+# Tareas Jira — AgendaApp
 
-Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo separarlo en tickets. **Todavía no se crearon issues en Jira.** La modificación local de autenticación con contraseña hardcodeada queda fuera del commit, del PR y de esta propuesta.
+Este documento registra el trabajo incluido en `feature/fixes-ui`. La épica y sus ocho tareas se crearon en Jira, proyecto PP2, y están en estado **Listo**. La modificación local de autenticación con contraseña hardcodeada queda fuera del commit, del PR y de estas tareas.
 
-## Épica sugerida: Mejoras de navegación, indicadores y experiencia de AgendaApp
+## Épica [PP2-45](https://axelspp.atlassian.net/browse/PP2-45): Mejoras de experiencia de usuario en AgendaApp
 
-### 1. Preparar datos de demostración para clientes y peluqueros
+### 1. [PP2-46](https://axelspp.atlassian.net/browse/PP2-46) — Preparar datos de demostración para clientes y peluqueros
 
 **Objetivo:** que la cuenta de demostración de cliente y los perfiles profesionales tengan actividad visible al iniciar la aplicación.
 
@@ -14,7 +14,7 @@ Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo 
 
 **Archivos:** `apps/api/scripts/seed-agenda.mjs`.
 
-### 2. Navegar por rutas según el rol
+### 2. [PP2-47](https://axelspp.atlassian.net/browse/PP2-47) — Implementar rutas internas según el rol
 
 **Objetivo:** que las vistas de administración, peluquero y cliente tengan URLs propias y funcionen al recargar o compartir una ruta interna.
 
@@ -24,7 +24,7 @@ Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo 
 
 **Archivos:** `apps/web/src/app/[[...segments]]/page.tsx`, `apps/web/src/app/page.tsx`, `apps/web/src/components/dashboard.tsx`.
 
-### 3. Mejorar navegación y encabezados del peluquero
+### 3. [PP2-48](https://axelspp.atlassian.net/browse/PP2-48) — Unificar navegación y encabezados del peluquero
 
 **Objetivo:** que Agenda, Mi perfil e Indicadores compartan una navegación estable y clara.
 
@@ -34,7 +34,7 @@ Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo 
 
 **Archivos:** `apps/web/src/components/dashboard.tsx`, `apps/web/src/components/flujo-peluquero.tsx`, `apps/web/src/app/globals.css`.
 
-### 4. Consultar indicadores del peluquero por período
+### 4. [PP2-49](https://axelspp.atlassian.net/browse/PP2-49) — Consultar indicadores del peluquero por período
 
 **Objetivo:** permitir revisar actividad diaria o de varias semanas con métricas comparables.
 
@@ -44,27 +44,17 @@ Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo 
 
 **Archivos:** `apps/api/src/modules/users/personal.control.ts`, `apps/api/src/modules/users/users.controller.ts`, `packages/shared/src/reservations.ts`, `apps/web/src/components/flujo-peluquero.tsx` y test de flujo profesional.
 
-### 5. Simplificar visualización de indicadores
+### 5. [PP2-50](https://axelspp.atlassian.net/browse/PP2-50) — Mejorar gráficos y filtros de indicadores administrativos
 
-**Objetivo:** mostrar tendencias sin amontonar las etiquetas cuando el período tiene muchos días.
+**Objetivo:** alinear el gráfico con las fechas consultadas y facilitar la lectura de los reportes.
 
-**Alcance:** gráficos lineales por día para peluqueros y administración; etiquetas espaciadas y nota de rating sin estrellas cuando no hay datos.
+**Alcance:** gráfico lineal para los indicadores administrativos, días sin turnos completados con valor cero y filtros de hasta 31 días inclusive. Los gráficos de peluquero y administración usan etiquetas espaciadas; el rating sin datos no muestra estrellas.
 
-**Aceptación:** los gráficos usan los datos filtrados; las fechas se leen en períodos largos; el rating vacío muestra “Sin datos” sin estrellas grises.
+**Aceptación:** el gráfico administrativo cubre exactamente el período seleccionado; Consultar envía y muestra el rango elegido; la interfaz y la API rechazan períodos superiores a 31 días; los gráficos usan los datos filtrados; el rating vacío muestra “Sin datos” sin estrellas grises.
 
 **Archivos:** `apps/web/src/components/flujo-peluquero.tsx`, `apps/web/src/components/indicadores.tsx`, `apps/web/src/app/globals.css`.
 
-### 9. Alinear el rango consultado con el gráfico de administración
-
-**Objetivo:** que el período seleccionado y el eje temporal del gráfico representen las mismas fechas.
-
-**Alcance:** completar con cero los días sin turnos; limitar cada consulta a 31 días inclusive en los controles y en la API; mostrar el rango aplicado.
-
-**Aceptación:** una consulta del 1 al 30 de octubre dibuja todos los días de ese rango, incluidos los días sin actividad; no se puede consultar un período mayor a 31 días; la API rechaza rangos de más de 31 días.
-
-**Archivos:** `apps/web/src/components/indicadores.tsx`, `apps/web/src/app/globals.css`, `apps/api/src/modules/reports/application/indicadores.control.ts` y test de reportes.
-
-### 6. Pulir formularios y pantallas de administración
+### 6. [PP2-51](https://axelspp.atlassian.net/browse/PP2-51) — Pulir formularios y pantallas de administración
 
 **Objetivo:** ordenar las pantallas operativas y hacer más visibles sus estados.
 
@@ -74,7 +64,7 @@ Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo 
 
 **Archivos:** componentes de catálogo, cobros, personal, disponibilidad e indicadores; `apps/web/src/app/globals.css`.
 
-### 7. Aplicar identidad visual de AgendaApp
+### 7. [PP2-53](https://axelspp.atlassian.net/browse/PP2-53) — Aplicar identidad visual de AgendaApp
 
 **Objetivo:** incorporar el logo aprobado y mantener una identidad consistente en acceso y panel autenticado.
 
@@ -84,7 +74,7 @@ Este documento resume el trabajo incluido en `feature/fixes-ui` y propone cómo 
 
 **Archivos:** `apps/web/public/agendaapp-icon.png`, `apps/web/src/components/login-view.tsx`, `apps/web/src/components/dashboard.tsx`, `apps/web/src/app/globals.css`.
 
-### 8. Simplificar inicio y reinicio local en Windows
+### 8. [PP2-52](https://axelspp.atlassian.net/browse/PP2-52) — Simplificar inicio y reinicio local en Git Bash para Windows
 
 **Objetivo:** iniciar frontend y backend desde Git Bash con un solo comando y documentar el flujo.
 
