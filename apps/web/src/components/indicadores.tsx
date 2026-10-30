@@ -43,12 +43,9 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
   }, [reload]);
 
   const r = data?.resumen;
+  const dailyTurnosMax = Math.max(1, ...(data?.turnosPorDia.map((d) => d.cantidad) ?? [0]));
   return (
     <section className="booking" aria-labelledby="indic-title">
-      <style>{`
-        .report-list { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
-        .report-list li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(127,127,127,0.12); }
-      `}</style>
       <header className="booking-header">
         <button className="back-button" aria-label="Volver" onClick={onClose}>
           ‹
@@ -58,7 +55,7 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
       <p className="form-help">
         Indicadores y reportes del negocio en el período elegido.
       </p>
-      <div className="service-actions">
+      <div className="report-filters">
         <label className="booking-label date-field">
           Desde
           <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
@@ -81,7 +78,7 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
 
       {r && !loading && !error && (
         <>
-          <div className="role-grid" aria-label="Resumen del período">
+          <div className="role-grid indicator-summary" aria-label="Resumen del período">
             <article className="receipt-card">
               <span className="role-label">Ingresos</span>
               <h3>{money(r.ingresos)}</h3>
@@ -104,7 +101,7 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
             </article>
           </div>
 
-          <h3 className="booking-label">Servicios más pedidos</h3>
+          <h3 className="booking-label report-heading">Servicios más pedidos</h3>
           {data!.serviciosMasPedidos.length ? (
             <ul className="report-list">
               {data!.serviciosMasPedidos.map((s) => (
@@ -118,7 +115,7 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
             <p>Sin datos en el período.</p>
           )}
 
-          <h3 className="booking-label">Rendimiento por peluquero/a</h3>
+          <h3 className="booking-label report-heading">Rendimiento por peluquero/a</h3>
           {data!.rendimientoPorPeluquero.length ? (
             <ul className="report-list">
               {data!.rendimientoPorPeluquero.map((p) => (
@@ -134,12 +131,15 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
             <p>Sin datos en el período.</p>
           )}
 
-          <h3 className="booking-label">Turnos por día</h3>
+          <h3 className="booking-label report-heading">Turnos por día</h3>
           {data!.turnosPorDia.length ? (
-            <ul className="report-list">
+            <ul className="admin-daily-chart" aria-label="Turnos por día en el período seleccionado">
               {data!.turnosPorDia.map((d) => (
                 <li key={d.fecha}>
-                  <span>{dateLabel(d.fecha)}</span>
+                  <span className="admin-daily-chart-date">{dateLabel(d.fecha)}</span>
+                  <span className="admin-daily-chart-track" aria-hidden="true">
+                    <span style={{ width: `${(d.cantidad / dailyTurnosMax) * 100}%` }} />
+                  </span>
                   <strong>{d.cantidad}</strong>
                 </li>
               ))}

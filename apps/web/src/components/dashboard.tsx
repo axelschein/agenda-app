@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import type { AuthenticatedUser } from "@agenda-app/shared";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { API_URL } from "./agenda-api";
 import { CatalogoServicios } from "./catalogo-servicios";
@@ -25,6 +26,7 @@ type View =
   | "mis-turnos"
   | "peluquero"
   | "peluquero-perfil"
+  | "peluquero-indicadores"
   | "personal"
   | "cobros"
   | "pagos"
@@ -37,9 +39,19 @@ type View =
  */
 export function Dashboard({ user }: { user: AuthenticatedUser }) {
   const router = useRouter();
-  const [view, setView] = useState<View>("home");
+  const pathname = usePathname();
+  const view = viewForPath(user.role, pathname);
   const [error, setError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
+
+  function navigate(nextView: View) {
+    const nextPath = pathForView(user.role, nextView);
+    if (user.role === "BARBER" && nextView.startsWith("peluquero")) {
+      if (pathname !== nextPath) window.history.pushState(null, "", nextPath);
+      return;
+    }
+    router.push(nextPath);
+  }
 
   async function handleLogout() {
     setError("");
@@ -50,6 +62,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
         credentials: "include",
       });
       if (!response.ok) throw new Error("No se pudo cerrar la sesión.");
+      router.push("/");
       router.refresh();
     } catch {
       setError("No se pudo cerrar sesión. Intentá de nuevo.");
@@ -61,16 +74,19 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
     <main className="page-shell">
       <section className="dashboard" aria-labelledby="page-title">
         <header className="dashboard-header">
-          <div>
-            <p className="eyebrow">
-              AgendaApp ·{" "}
-              {user.role === "ADMIN"
-                ? "Administración"
-                : user.role === "BARBER"
-                  ? "Peluquero/a"
-                  : "Cliente"}
-            </p>
-            <h1 id="page-title">Hola, {user.email}</h1>
+          <div className="dashboard-identity">
+            <Image className="dashboard-logo" src="/agendaapp-icon.png" alt="" width={56} height={56} priority />
+            <div>
+              <p className="eyebrow dashboard-eyebrow">
+                AgendaApp ·{" "}
+                {user.role === "ADMIN"
+                  ? "Administración"
+                  : user.role === "BARBER"
+                    ? "Peluquero/a"
+                    : "Cliente"}
+              </p>
+              <h1 id="page-title">Hola, {user.email}</h1>
+            </div>
           </div>
           <button
             className="button button-secondary"
@@ -81,35 +97,35 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
           </button>
         </header>
         {view === "booking" && user.role === "CLIENT" ? (
-          <ReservaTurno onClose={() => setView("home")} />
+          <ReservaTurno onClose={() => navigate("home")} />
         ) : view === "hours" && user.role === "ADMIN" ? (
-          <HorariosLaborales onClose={() => setView("home")} />
+          <HorariosLaborales onClose={() => navigate("home")} />
         ) : view === "services" && user.role === "ADMIN" ? (
-          <CatalogoServicios onClose={() => setView("home")} />
+          <CatalogoServicios onClose={() => navigate("home")} />
         ) : view === "reservas" && user.role === "ADMIN" ? (
-          <GestionReservas onClose={() => setView("home")} />
+          <GestionReservas onClose={() => navigate("home")} />
         ) : view === "mis-turnos" && user.role === "CLIENT" ? (
-          <MisTurnos onClose={() => setView("home")} />
-        ) : (view === "peluquero" || view === "peluquero-perfil") &&
+          <MisTurnos onClose={() => navigate("home")} />
+        ) : (view === "peluquero" || view === "peluquero-perfil" || view === "peluquero-indicadores") &&
           user.role === "BARBER" ? (
           <FlujoPeluquero
-            key={view}
-            onClose={() => setView("home")}
-            initialSection={view === "peluquero-perfil" ? "perfil" : "agenda"}
+            onClose={() => navigate("home")}
+            initialSection={view === "peluquero-perfil" ? "perfil" : view === "peluquero-indicadores" ? "indicadores" : "agenda"}
+            onSectionChange={(section) => navigate(section === "perfil" ? "peluquero-perfil" : section === "indicadores" ? "peluquero-indicadores" : "peluquero")}
           />
         ) : view === "personal" && user.role === "ADMIN" ? (
-          <GestionPersonal onClose={() => setView("home")} />
+          <GestionPersonal onClose={() => navigate("home")} />
         ) : view === "cobros" && user.role === "ADMIN" ? (
-          <Cobros onClose={() => setView("home")} />
+          <Cobros onClose={() => navigate("home")} />
         ) : view === "pagos" && user.role === "CLIENT" ? (
-          <MisPagos onClose={() => setView("home")} />
+          <MisPagos onClose={() => navigate("home")} />
         ) : view === "indicadores" && user.role === "ADMIN" ? (
-          <Indicadores onClose={() => setView("home")} />
+          <Indicadores onClose={() => navigate("home")} />
         ) : user.role === "ADMIN" ? (
           <div className="role-grid" aria-label="Funciones de administración">
             <button
               className="role-card role-card-action"
-              onClick={() => setView("services")}
+              onClick={() => navigate("services")}
             >
               <span className="role-label">Administración</span>
               <h2>Servicios</h2>
@@ -117,7 +133,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("hours")}
+              onClick={() => navigate("hours")}
             >
               <span className="role-label">Administración</span>
               <h2>Disponibilidad</h2>
@@ -125,7 +141,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("reservas")}
+              onClick={() => navigate("reservas")}
             >
               <span className="role-label">Administración</span>
               <h2>Reservas</h2>
@@ -133,7 +149,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("personal")}
+              onClick={() => navigate("personal")}
             >
               <span className="role-label">Administración</span>
               <h2>Personal</h2>
@@ -141,7 +157,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("cobros")}
+              onClick={() => navigate("cobros")}
             >
               <span className="role-label">Administración</span>
               <h2>Cobros</h2>
@@ -149,7 +165,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("indicadores")}
+              onClick={() => navigate("indicadores")}
             >
               <span className="role-label">Administración</span>
               <h2>Indicadores</h2>
@@ -160,7 +176,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
           <div className="role-grid" aria-label="Funciones del peluquero">
             <button
               className="role-card role-card-action"
-              onClick={() => setView("peluquero")}
+              onClick={() => navigate("peluquero")}
             >
               <span className="role-label">Tu trabajo</span>
               <h2>Agenda y turnos</h2>
@@ -171,18 +187,26 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("peluquero-perfil")}
+              onClick={() => navigate("peluquero-perfil")}
             >
               <span className="role-label">Tu perfil</span>
               <h2>Mi perfil</h2>
               <p>Consultá y actualizá los datos de tu perfil profesional.</p>
+            </button>
+            <button
+              className="role-card role-card-action"
+              onClick={() => navigate("peluquero-indicadores")}
+            >
+              <span className="role-label">Tu rendimiento</span>
+              <h2>Indicadores</h2>
+              <p>Consultá tus turnos completados e ingresos estimados.</p>
             </button>
           </div>
         ) : (
           <div className="role-grid" aria-label="Funciones de cliente">
             <button
               className="role-card role-card-action"
-              onClick={() => setView("booking")}
+              onClick={() => navigate("booking")}
             >
               <span className="role-label">Tu agenda</span>
               <h2>Reservar turno</h2>
@@ -190,7 +214,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("mis-turnos")}
+              onClick={() => navigate("mis-turnos")}
             >
               <span className="role-label">Tu agenda</span>
               <h2>Mis turnos</h2>
@@ -201,7 +225,7 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
             </button>
             <button
               className="role-card role-card-action"
-              onClick={() => setView("pagos")}
+              onClick={() => navigate("pagos")}
             >
               <span className="role-label">Tu agenda</span>
               <h2>Mis pagos</h2>
@@ -226,4 +250,46 @@ export function Dashboard({ user }: { user: AuthenticatedUser }) {
       </section>
     </main>
   );
+}
+
+const homePath: Record<AuthenticatedUser["role"], string> = {
+  ADMIN: "/admin",
+  BARBER: "/peluquero",
+  CLIENT: "/cliente",
+};
+
+const pathsByRole: Record<AuthenticatedUser["role"], Partial<Record<View, string>>> = {
+  ADMIN: {
+    services: "/admin/servicios",
+    hours: "/admin/disponibilidad",
+    reservas: "/admin/reservas",
+    personal: "/admin/personal",
+    cobros: "/admin/cobros",
+    indicadores: "/admin/indicadores",
+  },
+  BARBER: {
+    peluquero: "/peluquero/agenda",
+    "peluquero-perfil": "/peluquero/perfil",
+    "peluquero-indicadores": "/peluquero/indicadores",
+  },
+  CLIENT: {
+    booking: "/cliente/reservar",
+    "mis-turnos": "/cliente/turnos",
+    pagos: "/cliente/pagos",
+  },
+};
+
+const viewsByPath = Object.fromEntries(
+  Object.entries(pathsByRole).flatMap(([, routes]) =>
+    Object.entries(routes).map(([view, path]) => [path, view as View]),
+  ),
+) as Record<string, View>;
+
+function viewForPath(role: AuthenticatedUser["role"], pathname: string): View {
+  if (pathname === homePath[role]) return "home";
+  return viewsByPath[pathname] ?? "home";
+}
+
+function pathForView(role: AuthenticatedUser["role"], view: View): string {
+  return view === "home" ? homePath[role] : pathsByRole[role][view] ?? homePath[role];
 }

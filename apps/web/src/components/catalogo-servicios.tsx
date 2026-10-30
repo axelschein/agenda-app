@@ -205,7 +205,7 @@ export function CatalogoServicios({ onClose }: { onClose: () => void }) {
           {error}
         </p>
       )}
-      <h3>Servicios</h3>
+      <h3 className="service-list-heading">Servicios</h3>
       <div className="service-options">
         {services.map((s) => (
           <article
