@@ -478,7 +478,7 @@ h1 {
 .service-actions .button { min-height: 40px; padding: 8px 12px; font-size: .9rem; }
 .report-filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto auto;
   align-items: end;
   gap: 12px;
   width: 100%;
@@ -511,10 +511,12 @@ h1 {
   box-shadow: 0 0 0 3px #6d28df20;
 }
 .report-filters > .button {
-  width: 100%;
+  width: auto;
+  min-width: 120px;
   min-height: 46px;
   margin: 0;
   padding: 10px 18px;
+  white-space: nowrap;
 }
 .report-range-help {
   margin: -14px 0 24px;
@@ -569,8 +571,8 @@ h1 {
   .service-form-fields { grid-template-columns: 1fr; }
   .service-option { flex-wrap: wrap; }
   .service-actions { width: 100%; margin-left: 0; }
-  .report-filters { grid-template-columns: 1fr 1fr; }
-  .report-filters > .button { grid-column: 1 / -1; }
+  .report-filters { grid-template-columns: 1fr; }
+  .report-filters > .button { width: 100%; grid-column: auto; }
   .indicator-summary { grid-template-columns: 1fr; }
 }
 .booking .selected {
@@ -1488,4 +1490,31 @@ h1 {
 .barber-line-chart-label {
   fill: var(--muted);
   font-size: 11px;
+}
+
+.report-status {
+  min-height: 1.25em;
+  margin: 8px 0;
+  color: var(--muted);
+}
+.report-metadata {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: #fff;
+}
+.report-metadata p { margin: 4px 0; }
+.report-total {
+  margin: -8px 0 18px;
+  color: var(--muted);
+  text-align: right;
+}
+.report-total strong { color: var(--ink); }
+.report-filters > .button:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+@media (max-width: 640px) {
+  .report-filters > .button { min-width: 0; }
 }

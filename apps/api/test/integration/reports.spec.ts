@@ -102,6 +102,8 @@ describe("Indicadores y reportes de Administración (PP2-40)", () => {
       .expect(200);
     const { resumen, serviciosMasPedidos, rendimientoPorPeluquero, turnosPorDia } = r.body;
 
+    expect(resumen).toMatchObject({ desde: "2099-03-01", hasta: "2099-03-31" });
+    expect(new Date(r.body.generadoEn).toISOString()).toBe(r.body.generadoEn);
     expect(resumen.turnos).toBe(4);
     expect(resumen.porEstado).toEqual([
       { estado: "Cancelado", cantidad: 1 },
@@ -140,6 +142,24 @@ describe("Indicadores y reportes de Administración (PP2-40)", () => {
     expect(r.body.resumen).toMatchObject({ turnos: 0, ingresos: 0, ticketPromedio: 0, cobros: 0 });
     expect(r.body.serviciosMasPedidos).toEqual([]);
     expect(r.body.turnosPorDia).toEqual([]);
+  });
+
+  it("no duplica turnos cuando un cobro fue anulado y reemplazado", async () => {
+    db.prepare("UPDATE pago SET estado='Anulado' WHERE id='p1'").run();
+    pago("p1-reemplazo", "t1", 600000);
+    const admin = await login("admin@example.com");
+    const r = await request(app.getHttpServer())
+      .get("/reports/indicators")
+      .query({ desde: "2099-03-01", hasta: "2099-03-31" })
+      .set("Cookie", admin)
+      .expect(200);
+
+    expect(r.body.resumen.ingresos).toBe(12000);
+    expect(r.body.rendimientoPorPeluquero).toContainEqual({
+      peluquero: "Ana",
+      turnos: 2,
+      ingresos: 12000,
+    });
   });
 
   it("un Cliente no puede ver los indicadores de Administración", async () => {

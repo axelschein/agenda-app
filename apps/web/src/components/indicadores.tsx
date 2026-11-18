@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { PanelIndicadores } from "@agenda-app/shared";
 import { agendaRequest, businessToday, dateLabel, money } from "./agenda-api";
+import { descargarCsvReportes, fechaGeneracionLabel } from "./reportes-csv";
 
 function hace(dias: number): string {
   const d = new Date(Date.now() - dias * 86_400_000);
@@ -68,7 +69,24 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
   }, [requestedPeriod]);
 
   const r = data?.resumen;
-  const dailyTurnos = completarDias(requestedPeriod.desde, requestedPeriod.hasta, data?.turnosPorDia ?? []);
+  const reportPeriod = r ?? requestedPeriod;
+  const dailyTurnos = completarDias(reportPeriod.desde, reportPeriod.hasta, data?.turnosPorDia ?? []);
+  const turnosServicios = data?.serviciosMasPedidos.reduce(
+    (total, servicio) => total + servicio.cantidad,
+    0,
+  ) ?? 0;
+  const turnosPeluqueros = data?.rendimientoPorPeluquero.reduce(
+    (total, peluquero) => total + peluquero.turnos,
+    0,
+  ) ?? 0;
+  const ingresosPeluqueros = data?.rendimientoPorPeluquero.reduce(
+    (total, peluquero) => total + peluquero.ingresos,
+    0,
+  ) ?? 0;
+  const turnosDiarios = data?.turnosPorDia.reduce(
+    (total, dia) => total + dia.cantidad,
+    0,
+  ) ?? 0;
   const dailyTurnosMax = Math.max(0, ...dailyTurnos.map((d) => d.cantidad));
   const dailyTurnosScale = Math.max(1, dailyTurnosMax);
   const maxDesde = desplazarFecha(hasta, -30);
@@ -101,7 +119,7 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
         <h2 id="indic-title">Indicadores</h2>
       </header>
       <p className="form-help">
-        Indicadores y reportes del {dateLabel(requestedPeriod.desde)} al {dateLabel(requestedPeriod.hasta)}.
+        Indicadores y reportes del {dateLabel(reportPeriod.desde)} al {dateLabel(reportPeriod.hasta)}.
       </p>
       <div className="report-filters">
         <label className="booking-label date-field">
@@ -128,18 +146,32 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
         >
           Consultar
         </button>
+        <button
+          className="button button-secondary"
+          type="button"
+          disabled={!data || loading || Boolean(error)}
+          onClick={() => data && descargarCsvReportes(data)}
+        >
+          Exportar CSV
+        </button>
       </div>
       <p className="form-help report-range-help">El período puede incluir hasta 31 días.</p>
 
-      {loading && <p role="status">Calculando indicadores…</p>}
+      <p className="report-status" role="status" aria-live="polite" aria-atomic="true">
+        {loading ? (data ? "Actualizando reportes…" : "Calculando reportes…") : ""}
+      </p>
       {error && (
         <p role="alert" className="error-message">
           {error}
         </p>
       )}
 
-      {r && !loading && !error && (
-        <>
+      {r && !error && (
+        <div className="report-results" aria-busy={loading}>
+          <div className="report-metadata" aria-label="Período del reporte">
+            <p><strong>Período aplicado:</strong> {dateLabel(r.desde)} al {dateLabel(r.hasta)}</p>
+            <p><strong>Generado:</strong> {fechaGeneracionLabel(data!.generadoEn)} (hora de Buenos Aires)</p>
+          </div>
           <div className="role-grid indicator-summary" aria-label="Resumen del período">
             <article className="receipt-card">
               <span className="role-label">Ingresos</span>
@@ -165,30 +197,38 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
 
           <h3 className="booking-label report-heading">Servicios más pedidos</h3>
           {data!.serviciosMasPedidos.length ? (
-            <ul className="report-list">
-              {data!.serviciosMasPedidos.map((s) => (
-                <li key={s.servicio}>
-                  <span>{s.servicio}</span>
-                  <strong>{s.cantidad}</strong>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="report-list">
+                {data!.serviciosMasPedidos.map((s) => (
+                  <li key={s.servicio}>
+                    <span>{s.servicio}</span>
+                    <strong>{s.cantidad}</strong>
+                  </li>
+                ))}
+              </ul>
+              <p className="report-total">Total de turnos no cancelados: <strong>{turnosServicios}</strong></p>
+            </>
           ) : (
             <p>Sin datos en el período.</p>
           )}
 
           <h3 className="booking-label report-heading">Rendimiento por peluquero/a</h3>
           {data!.rendimientoPorPeluquero.length ? (
-            <ul className="report-list">
-              {data!.rendimientoPorPeluquero.map((p) => (
-                <li key={p.peluquero}>
-                  <span>
-                    {p.peluquero} · {p.turnos} turno(s)
-                  </span>
-                  <strong>{money(p.ingresos)}</strong>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="report-list">
+                {data!.rendimientoPorPeluquero.map((p) => (
+                  <li key={p.peluquero}>
+                    <span>
+                      {p.peluquero} · {p.turnos} turno(s)
+                    </span>
+                    <strong>{money(p.ingresos)}</strong>
+                  </li>
+                ))}
+              </ul>
+              <p className="report-total">
+                Total: <strong>{turnosPeluqueros} turnos</strong> · <strong>{money(ingresosPeluqueros)} cobrados</strong>
+              </p>
+            </>
           ) : (
             <p>Sin datos en el período.</p>
           )}
@@ -203,7 +243,7 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
               <svg
                 viewBox={`0 0 ${chartWidth} 244`}
                 role="img"
-                aria-label={`Turnos por día entre ${dateLabel(requestedPeriod.desde)} y ${dateLabel(requestedPeriod.hasta)}. Máximo: ${dailyTurnosMax} turnos en un día.`}
+                aria-label={`Turnos por día entre ${dateLabel(reportPeriod.desde)} y ${dateLabel(reportPeriod.hasta)}. Máximo: ${dailyTurnosMax} turnos en un día.`}
                 preserveAspectRatio="none"
               >
                 <g className="admin-line-chart-grid" aria-hidden="true">
@@ -241,10 +281,11 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
                 })}
               </svg>
             </figure>
+            <p className="report-total">Total de turnos no cancelados: <strong>{turnosDiarios}</strong></p>
           ) : (
             <p>Sin datos en el período.</p>
           )}
-        </>
+        </div>
       )}
     </section>
   );

@@ -36,6 +36,7 @@ export class IndicadoresControl {
       serviciosMasPedidos: this.serviciosMasPedidos(desde, hasta),
       rendimientoPorPeluquero: this.rendimientoPorPeluquero(desde, hasta),
       turnosPorDia: this.turnosPorDia(desde, hasta),
+      generadoEn: new Date().toISOString(),
     };
   }
 
@@ -100,9 +101,14 @@ export class IndicadoresControl {
       .prepare(
         `SELECT t.peluquero_id,
                 COUNT(DISTINCT t.id) turnos,
-                COALESCE(SUM(CASE WHEN p.estado <> 'Anulado' THEN p.monto_centavos ELSE 0 END),0) ingresos
+                COALESCE(SUM(p.ingresos_centavos),0) ingresos
          FROM turno t
-         LEFT JOIN pago p ON p.turno_id = t.id
+         LEFT JOIN (
+           SELECT turno_id,
+                  SUM(CASE WHEN estado <> 'Anulado' THEN monto_centavos ELSE 0 END) ingresos_centavos
+           FROM pago
+           GROUP BY turno_id
+         ) p ON p.turno_id = t.id
          WHERE t.fecha BETWEEN ? AND ? AND t.estado <> 'Cancelado'
          GROUP BY t.peluquero_id
          ORDER BY ingresos DESC, turnos DESC`,
