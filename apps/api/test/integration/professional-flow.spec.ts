@@ -139,7 +139,7 @@ describe("PP2-22 flujo profesional", () => {
     database.db.prepare("UPDATE turno SET fecha='2099-01-04' WHERE id=?").run(ownYesterday);
 
     const result = await request(app.getHttpServer()).get("/users/me/indicators").query({ fecha }).set("Cookie", barber).expect(200);
-    expect(result.body).toEqual({ fecha, turnosCompletados: 1, ingresosEstimados: 6000, turnosDiaAnterior: 1, rating: null });
+    expect(result.body).toEqual({ desde: fecha, hasta: fecha, turnosCompletados: 1, ingresosEstimados: 6000, turnosPeriodoAnterior: 1, turnosPorDia: [{ fecha, cantidad: 1 }], rating: null });
     await request(app.getHttpServer()).get("/users/me/indicators").query({ fecha }).set("Cookie", client).expect(403);
   });
 });

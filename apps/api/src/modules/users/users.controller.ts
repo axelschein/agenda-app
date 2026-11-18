@@ -26,10 +26,16 @@ export class UsersController {
   }
 
   @Get("me/indicators")
-  indicadores(@CurrentUser() user: AuthenticatedUser, @Query("fecha") fecha: string) {
-    return this.personal.indicadores(user.peluqueroId!, fecha);
+  indicadores(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query("desde") desde?: string,
+    @Query("hasta") hasta?: string,
+    @Query("fecha") fecha?: string,
+  ) {
+    const inicio = desde ?? fecha;
+    const fin = hasta ?? fecha ?? desde;
+    return this.personal.indicadores(user.peluqueroId!, inicio, fin);
   }
-
   @Get("admin/peluqueros")
   @Roles("ADMIN")
   listarPersonal() {

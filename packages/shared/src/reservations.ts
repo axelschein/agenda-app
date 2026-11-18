@@ -56,10 +56,17 @@ export interface ReservationAdminView extends ReservationReceipt {
   clienteEmail: string;
 }
 
-export interface BarberIndicatorSummary {
+export interface BarberIndicatorDay {
   fecha: string;
+  cantidad: number;
+}
+
+export interface BarberIndicatorSummary {
+  desde: string;
+  hasta: string;
   turnosCompletados: number;
   ingresosEstimados: number;
-  turnosDiaAnterior: number;
+  turnosPeriodoAnterior: number;
+  turnosPorDia: BarberIndicatorDay[];
   rating: number | null;
 }

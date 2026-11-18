@@ -1,9 +1,12 @@
-# Local MVP database
+# Local database
 /data/
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
+
+# Prevent accidental nested auxiliary worktrees in the main checkout.
+/*-worktree/
 
 # Logs
 logs

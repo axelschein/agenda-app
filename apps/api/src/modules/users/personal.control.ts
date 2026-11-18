@@ -102,24 +102,42 @@ export class PersonalControl {
       .run(id, actorEmail, accion, JSON.stringify({ antes, despues }), new Date().toISOString());
   }
 
-  indicadores(id: string, fechaValue: unknown): BarberIndicatorSummary {
+  indicadores(id: string, desdeValue: unknown, hastaValue: unknown): BarberIndicatorSummary {
     this.obtener(id);
-    const fecha = validarFecha(fechaValue);
-    const anterior = new Date(Date.parse(`${fecha}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
-    const hoy = this.database.db.prepare(`
+    const desde = validarFecha(desdeValue);
+    const hasta = validarFecha(hastaValue);
+    if (desde > hasta) throw new BadRequestException("La fecha inicial no puede ser posterior a la fecha final.");
+    const duracionDias = Math.round((Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / 86_400_000) + 1;
+    if (duracionDias > 90) throw new BadRequestException("El período no puede superar los 90 días.");
+    const periodoAnteriorHasta = desplazarFecha(desde, -1);
+    const periodoAnteriorDesde = desplazarFecha(desde, -duracionDias);
+    const resumen = this.database.db.prepare(`
       SELECT COUNT(*) AS turnosCompletados, COALESCE(SUM(precio_centavos), 0) AS ingresosCentavos
-      FROM turno WHERE peluquero_id=? AND fecha=? AND estado='Completado'
-    `).get(id, fecha) as { turnosCompletados: number; ingresosCentavos: number };
-    const ayer = this.database.db.prepare(`
+      FROM turno WHERE peluquero_id=? AND fecha BETWEEN ? AND ? AND estado='Completado'
+    `).get(id, desde, hasta) as { turnosCompletados: number; ingresosCentavos: number };
+    const periodoAnterior = this.database.db.prepare(`
       SELECT COUNT(*) AS turnosCompletados
-      FROM turno WHERE peluquero_id=? AND fecha=? AND estado='Completado'
-    `).get(id, anterior) as { turnosCompletados: number };
+      FROM turno WHERE peluquero_id=? AND fecha BETWEEN ? AND ? AND estado='Completado'
+    `).get(id, periodoAnteriorDesde, periodoAnteriorHasta) as { turnosCompletados: number };
+    const turnosPorDia = this.database.db.prepare(`
+      SELECT fecha, COUNT(*) AS cantidad
+      FROM turno WHERE peluquero_id=? AND fecha BETWEEN ? AND ? AND estado='Completado'
+      GROUP BY fecha ORDER BY fecha
+    `).all(id, desde, hasta) as unknown as BarberIndicatorSummary["turnosPorDia"];
     return {
-      fecha,
-      turnosCompletados: hoy.turnosCompletados,
-      ingresosEstimados: hoy.ingresosCentavos / 100,
-      turnosDiaAnterior: ayer.turnosCompletados,
+      desde,
+      hasta,
+      turnosCompletados: resumen.turnosCompletados,
+      ingresosEstimados: resumen.ingresosCentavos / 100,
+      turnosPeriodoAnterior: periodoAnterior.turnosCompletados,
+      turnosPorDia,
       rating: null,
     };
   }
+}
+
+function desplazarFecha(fecha: string, dias: number): string {
+  const date = new Date(`${fecha}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + dias);
+  return date.toISOString().slice(0, 10);
 }

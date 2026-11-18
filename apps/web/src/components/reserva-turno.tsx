@@ -21,6 +21,8 @@ const icons: Record<string, string> = {
   coloracion: "✦",
   barba: "▥",
 };
+const CANCELABLES = ["Pendiente", "Confirmado"];
+
 export function ReservaTurno({ onClose }: { onClose: () => void }) {
   const [availabilityReason, setAvailabilityReason] = useState("");
   const [step, setStep] = useState(0);
@@ -40,6 +42,7 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
     [error, setError] = useState("");
   const [reload, setReload] = useState(0),
     [showMine, setShowMine] = useState(false);
+  const [cancelId, setCancelId] = useState("");
   const requestId = useRef(""),
     lock = useRef(false),
     heading = useRef<HTMLHeadingElement>(null);
@@ -183,6 +186,30 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
       setBusy(false);
     }
   }
+  async function cancelarEnLista(turno: ReservationReceipt) {
+    if (cancelId) return;
+    if (
+      !window.confirm(
+        `¿Cancelar tu turno del ${dateLabel(turno.fecha)} a las ${turno.horaInicio}? El horario quedará libre para otra persona.`,
+      )
+    )
+      return;
+    setCancelId(turno.id);
+    setError("");
+    try {
+      const actualizado = await agendaRequest<ReservationReceipt>(
+        `/reservations/${encodeURIComponent(turno.id)}/cancel`,
+        { method: "PATCH" },
+      );
+      setMine((prev) =>
+        (prev ?? []).map((t) => (t.id === actualizado.id ? actualizado : t)),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cancelar el turno.");
+    } finally {
+      setCancelId("");
+    }
+  }
   const title = showMine
     ? "Mis turnos"
     : receipt
@@ -244,7 +271,16 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
             Tus reservas registradas y su estado actual.
           </p>
           {mine?.length ? (
-            mine.map((r) => <ReceiptCard key={r.id} receipt={r} />)
+            mine.map((r) => (
+              <ReceiptCard
+                key={r.id}
+                receipt={r}
+                onCancelar={
+                  CANCELABLES.includes(r.estado) ? cancelarEnLista : undefined
+                }
+                canceling={cancelId === r.id}
+              />
+            ))
           ) : (
             <p>No tenés turnos registrados todavía.</p>
           )}
@@ -503,7 +539,15 @@ function SummaryCard({ summary }: { summary: ReservationSummary }) {
     </dl>
   );
 }
-function ReceiptCard({ receipt }: { receipt: ReservationReceipt }) {
+function ReceiptCard({
+  receipt,
+  onCancelar,
+  canceling = false,
+}: {
+  receipt: ReservationReceipt;
+  onCancelar?: ((r: ReservationReceipt) => void) | undefined;
+  canceling?: boolean;
+}) {
   return (
     <article className="receipt-card">
       <span className="state-badge">{receipt.estado}</span>
@@ -516,6 +560,18 @@ function ReceiptCard({ receipt }: { receipt: ReservationReceipt }) {
         Bloque de {receipt.duracionBloqueMinutos} min · {money(receipt.total)}
       </p>
       <small>Reserva {receipt.id}</small>
+      {onCancelar && (
+        <div className="service-actions">
+          <button
+            className="button button-danger"
+            type="button"
+            disabled={canceling}
+            onClick={() => onCancelar(receipt)}
+          >
+            {canceling ? "Cancelando…" : "Cancelar turno"}
+          </button>
+        </div>
+      )}
     </article>
   );
 }

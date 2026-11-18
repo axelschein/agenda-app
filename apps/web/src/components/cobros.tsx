@@ -127,56 +127,64 @@ export function Cobros({ onClose }: { onClose: () => void }) {
           )}
         </article>
       )}
-      {loading && <p role="status">Cargando pendientes…</p>}
-      {error && (
-        <p role="alert" className="error-message">
-          {error}
-        </p>
-      )}
-      {!loading && !error && pendientes.length === 0 && (
-        <p>No hay turnos pendientes de cobro.</p>
-      )}
-      {pendientes.map((t) => (
-        <article className="receipt-card" key={t.turnoId}>
-          <span className="state-badge estado-confirmado">{t.estadoTurno}</span>
-          <h3>{t.servicioNombre}</h3>
-          <p>Cliente: {t.clienteEmail}</p>
-          <p>con {t.peluquero}</p>
-          <p>
-            {dateLabel(t.fecha)} · {t.horaInicio} hs · {money(t.monto)}
+      <section className="payment-list" aria-labelledby="pending-payments-title">
+        <h3
+          className="booking-label payment-list-heading"
+          id="pending-payments-title"
+        >
+          Turnos pendientes de cobro
+        </h3>
+        {loading && <p role="status">Cargando pendientes…</p>}
+        {error && (
+          <p role="alert" className="error-message">
+            {error}
           </p>
-          <div className="service-actions">
-            <label className="sr-only" htmlFor={`metodo-${t.turnoId}`}>
-              Método de pago
-            </label>
-            <select
-              id={`metodo-${t.turnoId}`}
-              value={elegido[t.turnoId] ?? metodos[0] ?? ""}
-              disabled={busyId === t.turnoId}
-              onChange={(e) =>
-                setElegido((prev) => ({
-                  ...prev,
-                  [t.turnoId]: e.target.value as MetodoPago,
-                }))
-              }
-            >
-              {metodos.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <button
-              className="button"
-              type="button"
-              disabled={busyId === t.turnoId}
-              onClick={() => void cobrar(t)}
-            >
-              {busyId === t.turnoId ? "Cobrando…" : "Cobrar"}
-            </button>
-          </div>
-        </article>
-      ))}
+        )}
+        {!loading && !error && pendientes.length === 0 && (
+          <p className="payment-empty">No hay turnos pendientes de cobro.</p>
+        )}
+        {pendientes.map((t) => (
+          <article className="receipt-card" key={t.turnoId}>
+            <span className="state-badge estado-confirmado">{t.estadoTurno}</span>
+            <h3>{t.servicioNombre}</h3>
+            <p>Cliente: {t.clienteEmail}</p>
+            <p>con {t.peluquero}</p>
+            <p>
+              {dateLabel(t.fecha)} · {t.horaInicio} hs · {money(t.monto)}
+            </p>
+            <div className="service-actions">
+              <label className="sr-only" htmlFor={`metodo-${t.turnoId}`}>
+                Método de pago
+              </label>
+              <select
+                id={`metodo-${t.turnoId}`}
+                value={elegido[t.turnoId] ?? metodos[0] ?? ""}
+                disabled={busyId === t.turnoId}
+                onChange={(e) =>
+                  setElegido((prev) => ({
+                    ...prev,
+                    [t.turnoId]: e.target.value as MetodoPago,
+                  }))
+                }
+              >
+                {metodos.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="button"
+                type="button"
+                disabled={busyId === t.turnoId}
+                onClick={() => void cobrar(t)}
+              >
+                {busyId === t.turnoId ? "Cobrando…" : "Cobrar"}
+              </button>
+            </div>
+          </article>
+        ))}
+      </section>
       {error && (
         <button className="button" onClick={() => setReload((n) => n + 1)}>
           Reintentar
