@@ -235,17 +235,18 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
 
           <h3 className="booking-label report-heading">Turnos por día</h3>
           {dailyTurnos.length ? (
-            <figure className="admin-line-chart">
-              <figcaption>
-                <strong>Turnos por día</strong>
-                <span>Actividad en el período</span>
-              </figcaption>
-              <svg
-                viewBox={`0 0 ${chartWidth} 244`}
-                role="img"
-                aria-label={`Turnos por día entre ${dateLabel(reportPeriod.desde)} y ${dateLabel(reportPeriod.hasta)}. Máximo: ${dailyTurnosMax} turnos en un día.`}
-                preserveAspectRatio="none"
-              >
+            <>
+              <figure className="admin-line-chart">
+                <figcaption>
+                  <strong>Turnos por día</strong>
+                  <span>Actividad en el período</span>
+                </figcaption>
+                <svg
+                  viewBox={`0 0 ${chartWidth} 244`}
+                  role="img"
+                  aria-label={`Turnos por día entre ${dateLabel(reportPeriod.desde)} y ${dateLabel(reportPeriod.hasta)}. Máximo: ${dailyTurnosMax} turnos en un día.`}
+                  preserveAspectRatio="none"
+                >
                 <g className="admin-line-chart-grid" aria-hidden="true">
                   {chartYTicks.map((tick) => {
                     const y = chartBottom - (tick / dailyTurnosScale) * chartHeight;
@@ -279,9 +280,10 @@ export function Indicadores({ onClose }: { onClose: () => void }) {
                     </text>
                   );
                 })}
-              </svg>
-            </figure>
-            <p className="report-total">Total de turnos no cancelados: <strong>{turnosDiarios}</strong></p>
+                </svg>
+              </figure>
+              <p className="report-total">Total de turnos no cancelados: <strong>{turnosDiarios}</strong></p>
+            </>
           ) : (
             <p>Sin datos en el período.</p>
           )}
