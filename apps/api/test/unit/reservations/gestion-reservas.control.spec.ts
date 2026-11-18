@@ -35,7 +35,7 @@ const base = {
 describe("GestionReservasControl — unitarias con dependencias mockeadas", () => {
   let control: GestionReservasControl;
   const get = jest.fn<() => unknown>();
-  const all = jest.fn<() => unknown[]>();
+  const all = jest.fn<(...args: unknown[]) => unknown[]>();
   const update = jest.fn<(...args: unknown[]) => void>();
   const audit = jest.fn<(...args: unknown[]) => void>();
   const prepare = jest.fn<(sql: string) => unknown>();
