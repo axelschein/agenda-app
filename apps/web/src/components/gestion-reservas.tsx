@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { ReservationAdminView } from "@agenda-app/shared";
 import { agendaRequest, dateLabel, money } from "./agenda-api";
 
@@ -13,6 +13,8 @@ const ESTADO_CLASE: Record<string, string> = {
 
 export function GestionReservas({ onClose }: { onClose: () => void }) {
   const [reservas, setReservas] = useState<ReservationAdminView[]>([]);
+  const [valores, setValores] = useState({ desde: "", hasta: "", peluquero: "", cliente: "", estado: "" });
+  const [filtros, setFiltros] = useState(valores);
   const [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [busyId, setBusyId] = useState(""),
@@ -21,7 +23,10 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
     let active = true;
     setLoading(true);
     setError("");
-    agendaRequest<ReservationAdminView[]>("/reservations/all")
+    const params = new URLSearchParams();
+    Object.entries(filtros).forEach(([key, value]) => { if (value) params.set(key, value); });
+    const query = params.size ? `?${params.toString()}` : "";
+    agendaRequest<ReservationAdminView[]>(`/reservations/all${query}`)
       .then((r) => {
         if (active) setReservas(r);
       })
@@ -34,7 +39,18 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
     return () => {
       active = false;
     };
-  }, [reload]);
+  }, [filtros, reload]);
+
+  function aplicarFiltros(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFiltros({ ...valores });
+  }
+
+  function limpiarFiltros() {
+    const vacios = { desde: "", hasta: "", peluquero: "", cliente: "", estado: "" };
+    setValores(vacios);
+    setFiltros(vacios);
+  }
 
   async function rechazar(reserva: ReservationAdminView) {
     if (busyId) return;
@@ -92,6 +108,25 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
         </button>
         <h2 id="reservas-title">Reservas del negocio</h2>
       </header>
+      <form className="reservation-filters" onSubmit={aplicarFiltros}>
+        <div className="service-form-fields">
+          <div><label htmlFor="reservas-desde">Desde</label><input id="reservas-desde" type="date" value={valores.desde} onChange={(event) => setValores({ ...valores, desde: event.target.value })} /></div>
+          <div><label htmlFor="reservas-hasta">Hasta</label><input id="reservas-hasta" type="date" value={valores.hasta} onChange={(event) => setValores({ ...valores, hasta: event.target.value })} /></div>
+          <div><label htmlFor="reservas-peluquero">Peluquero/a</label><input id="reservas-peluquero" type="search" placeholder="Buscar por nombre" value={valores.peluquero} onChange={(event) => setValores({ ...valores, peluquero: event.target.value })} /></div>
+          <div><label htmlFor="reservas-cliente">Cliente</label><input id="reservas-cliente" type="search" placeholder="Buscar por email" value={valores.cliente} onChange={(event) => setValores({ ...valores, cliente: event.target.value })} /></div>
+          <div>
+            <label htmlFor="reservas-estado">Estado</label>
+            <select id="reservas-estado" value={valores.estado} onChange={(event) => setValores({ ...valores, estado: event.target.value })}>
+              <option value="">Todos los estados</option>
+              {Object.keys(ESTADO_CLASE).map((estado) => <option key={estado} value={estado}>{estado}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="service-form-actions">
+          <button className="button" type="submit" disabled={loading}>Aplicar filtros</button>
+          <button className="button button-secondary" type="button" onClick={limpiarFiltros} disabled={loading}>Limpiar</button>
+        </div>
+      </form>
       <p className="form-help">
         Consultá las reservas y rechazá las que el negocio no pueda atender. Al
         rechazar, el horario vuelve a quedar disponible para otros clientes.
@@ -103,7 +138,7 @@ export function GestionReservas({ onClose }: { onClose: () => void }) {
         </p>
       )}
       {!loading && !error && reservas.length === 0 && (
-        <p>Todavía no hay reservas registradas.</p>
+        <p role="status">{Object.values(filtros).some(Boolean) ? "No hay reservas que coincidan con los filtros." : "Todavía no hay reservas registradas."}</p>
       )}
       {reservas.map((r) => (
         <article className="receipt-card" key={r.id}>

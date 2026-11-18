@@ -1019,6 +1019,26 @@ h1 {
   }
 }
 
+.reservation-filters {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+.reservation-filters .service-form-fields { margin-bottom: 14px; }
+.reservation-filters .service-form-actions { align-items: center; gap: 10px; }
+.reservation-filters .service-form-actions .button { min-height: 46px; margin-top: 0; }
+.reservation-filters label { font-weight: 650; }
+.reservation-filters input,
+.reservation-filters select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
 /* Indicadores del peluquero: jerarquía visual y tarjetas equilibradas. */
 .barber-indicators {
   gap: 18px;
