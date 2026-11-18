@@ -64,6 +64,7 @@ describe("Gestión de reservas (PP2-13) — rechazo por el negocio", () => {
     process.env.AUTH_USERS_JSON = JSON.stringify([
       { email: "cliente@example.com", role: "CLIENT", passwordHash },
       { email: "admin@example.com", role: "ADMIN", passwordHash },
+      { email: "peluquero@example.com", role: "BARBER", peluqueroId: "ana", passwordHash },
     ]);
     const module = await Test.createTestingModule({
       imports: [AppModule],
@@ -151,6 +152,41 @@ describe("Gestión de reservas (PP2-13) — rechazo por el negocio", () => {
       estado: "Cancelado",
       motivoCancelacion: "rechazado por el negocio",
     });
+  });
+
+  it("combina los filtros del panel y limita esa consulta a Administración", async () => {
+    const client = await login();
+    const admin = await login("admin@example.com");
+    const barber = await login("peluquero@example.com");
+    await reservar(client);
+
+    const filtered = await request(app.getHttpServer())
+      .get("/reservations/all")
+      .query({ desde: fecha, hasta: fecha, peluquero: "an", cliente: "example", estado: "Pendiente" })
+      .set("Cookie", admin)
+      .expect(200);
+    expect(filtered.body).toHaveLength(1);
+    expect(filtered.body[0]).toMatchObject({
+      clienteEmail: "cliente@example.com",
+      peluquero: { nombre: "Ana" },
+      estado: "Pendiente",
+    });
+
+    await request(app.getHttpServer())
+      .get("/reservations/all")
+      .query({ cliente: "no-existe" })
+      .set("Cookie", admin)
+      .expect(200, []);
+    await request(app.getHttpServer())
+      .get("/reservations/all")
+      .query({ estado: "Pendiente" })
+      .set("Cookie", client)
+      .expect(403);
+    await request(app.getHttpServer())
+      .get("/reservations/all")
+      .query({ estado: "Pendiente" })
+      .set("Cookie", barber)
+      .expect(403);
   });
 
   it("no se puede rechazar dos veces ni rechazar una reserva inexistente", async () => {

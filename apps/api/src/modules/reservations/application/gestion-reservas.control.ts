@@ -13,6 +13,16 @@ import { minutosAHora, validarFecha, ZONA_HORARIA } from "../../availability/ind
 /** Motivo fijo definido en el criterio de aceptación de PP2-13. */
 export const MOTIVO_RECHAZO = "rechazado por el negocio";
 
+export interface FiltrosReservas {
+  desde?: string;
+  hasta?: string;
+  peluquero?: string;
+  cliente?: string;
+  estado?: string;
+}
+
+const ESTADOS_RESERVA = ["Pendiente", "Confirmado", "En curso", "Completado", "Cancelado"] as const;
+
 interface TurnoAdminRow {
   id: string;
   servicio_id: string;
@@ -43,11 +53,46 @@ export class GestionReservasControl {
            t.servicio_nombre, t.servicio_duracion_minutos, t.estado, t.motivo_cancelacion
     FROM turno t JOIN cliente c ON c.id = t.cliente_id`;
 
-  consultarTodas(): ReservationAdminView[] {
+  consultarTodas(filtros: FiltrosReservas = {}): ReservationAdminView[] {
+    const condiciones: string[] = [];
+    const parametros: string[] = [];
+    const desde = this.validarFechaFiltro(filtros.desde, "desde");
+    const hasta = this.validarFechaFiltro(filtros.hasta, "hasta");
+    if (desde && hasta && desde > hasta)
+      throw new BadRequestException("La fecha desde no puede ser posterior a la fecha hasta.");
+    if (desde) { condiciones.push("t.fecha >= ?"); parametros.push(desde); }
+    if (hasta) { condiciones.push("t.fecha <= ?"); parametros.push(hasta); }
+    if (filtros.peluquero?.trim()) {
+      condiciones.push("lower(p.nombre) LIKE lower(?) ESCAPE '\\'");
+      parametros.push(`%${this.escaparLike(filtros.peluquero.trim())}%`);
+    }
+    if (filtros.cliente?.trim()) {
+      condiciones.push("lower(c.email) LIKE lower(?) ESCAPE '\\'");
+      parametros.push(`%${this.escaparLike(filtros.cliente.trim())}%`);
+    }
+    if (filtros.estado?.trim()) {
+      if (!ESTADOS_RESERVA.includes(filtros.estado as (typeof ESTADOS_RESERVA)[number]))
+        throw new BadRequestException("El estado indicado no es válido.");
+      condiciones.push("t.estado = ?");
+      parametros.push(filtros.estado);
+    }
+    const where = condiciones.length ? ` WHERE ${condiciones.join(" AND ")}` : "";
     const rows = this.database.db
-      .prepare(`${this.seleccion} ORDER BY t.fecha, t.inicio`)
-      .all() as unknown as TurnoAdminRow[];
+      .prepare(`${this.seleccion} JOIN peluquero p ON p.id = t.peluquero_id${where} ORDER BY t.fecha, t.inicio`)
+      .all(...parametros) as unknown as TurnoAdminRow[];
     return rows.map((row) => this.vista(row));
+  }
+
+  private validarFechaFiltro(value: string | undefined, campo: string): string | undefined {
+    if (value === undefined || value === "") return undefined;
+    const parsed = new Date(`${value}T00:00:00Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value)
+      throw new BadRequestException(`La fecha ${campo} no es válida.`);
+    return value;
+  }
+
+  private escaparLike(value: string): string {
+    return value.replace(/[\\%_]/g, "\\$&");
   }
 
   rechazar(id: string): ReservationAdminView {

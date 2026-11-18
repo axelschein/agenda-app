@@ -90,6 +90,39 @@ describe("GestionReservasControl — unitarias con dependencias mockeadas", () =
     });
   });
 
+  it("combina filtros de fecha, peluquero, cliente y estado en la consulta", () => {
+    control.consultarTodas({
+      desde: "2099-01-01",
+      hasta: "2099-01-31",
+      peluquero: "an",
+      cliente: "example",
+      estado: "Pendiente",
+    });
+
+    const consulta = prepare.mock.calls[0]?.[0] ?? "";
+    expect(consulta).toContain("t.fecha >= ?");
+    expect(consulta).toContain("t.fecha <= ?");
+    expect(consulta).toContain("p.nombre");
+    expect(consulta).toContain("c.email");
+    expect(consulta).toContain("t.estado = ?");
+    expect(all).toHaveBeenCalledWith(
+      "2099-01-01",
+      "2099-01-31",
+      "%an%",
+      "%example%",
+      "Pendiente",
+    );
+  });
+
+  it("rechaza fechas invertidas y estados desconocidos", () => {
+    expect(() =>
+      control.consultarTodas({ desde: "2099-01-31", hasta: "2099-01-01" }),
+    ).toThrow(BadRequestException);
+    expect(() => control.consultarTodas({ estado: "Desconocido" })).toThrow(
+      BadRequestException,
+    );
+  });
+
   it("rechaza un turno pendiente, fija el motivo y audita", () => {
     get
       .mockReturnValueOnce(base)

@@ -1,6 +1,5 @@
-import { Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
+import { Controller, Get, Param, Patch, Query, UseGuards } from "@nestjs/common";
 import type { AuthenticatedUser } from "@agenda-app/shared";
-import { Query } from "@nestjs/common";
 import { CurrentUser } from "../auth/current-user.decorator.js";
 import { Roles } from "../auth/roles.decorator.js";
 import { RolesGuard } from "../auth/roles.guard.js";
@@ -15,8 +14,20 @@ export class GestionReservasController {
   constructor(private readonly gestion: GestionReservasControl) {}
 
   @Get("all")
-  todas() {
-    return this.gestion.consultarTodas();
+  todas(
+    @Query("desde") desde?: string,
+    @Query("hasta") hasta?: string,
+    @Query("peluquero") peluquero?: string,
+    @Query("cliente") cliente?: string,
+    @Query("estado") estado?: string,
+  ) {
+    return this.gestion.consultarTodas({
+      ...(desde !== undefined ? { desde } : {}),
+      ...(hasta !== undefined ? { hasta } : {}),
+      ...(peluquero !== undefined ? { peluquero } : {}),
+      ...(cliente !== undefined ? { cliente } : {}),
+      ...(estado !== undefined ? { estado } : {}),
+    });
   }
 
   @Patch(":id/reject")
