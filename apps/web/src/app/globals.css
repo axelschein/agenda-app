@@ -1518,3 +1518,74 @@ h1 {
 @media (max-width: 640px) {
   .report-filters > .button { min-width: 0; }
 }
+.booking-header h2:focus-visible {
+  outline: 3px solid #6d28df;
+  outline-offset: 5px;
+  border-radius: 3px;
+}
+.booking-progress .current-step-mark {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+}
+.selection-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.barber-option .selection-indicator {
+  color: var(--accent);
+}
+.slot-option .selection-indicator {
+  display: block;
+  margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .booking-progress {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+  .booking-progress li {
+    min-width: 0;
+    font-size: 0.75rem;
+  }
+  .barber-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .barber-option {
+    min-width: 0;
+    min-height: 132px;
+    padding: 16px 8px;
+  }
+  .barber-option strong {
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  .service-option {
+    display: grid;
+    grid-template-columns: 20px 38px minmax(0, 1fr);
+    align-items: center;
+  }
+  .service-option b {
+    grid-column: 3;
+    margin-left: 0;
+    justify-self: start;
+  }
+  .slot-option {
+    min-width: 72px;
+    min-height: 48px;
+    padding: 10px 12px;
+  }
+  .summary-card div {
+    flex-wrap: wrap;
+  }
+  .summary-card dd {
+    overflow-wrap: anywhere;
+  }

@@ -249,6 +249,11 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
                 <span>
                   {i + 1}. {label}
                 </span>
+                {i === step && (
+                  <strong className="current-step-mark" aria-hidden="true">
+                    Actual
+                  </strong>
+                )}
               </li>
             ),
           )}
@@ -263,7 +268,7 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
         </div>
       )}
       {loading && !showMine && !receipt && (
-        <p role="status">Consultando disponibilidad…</p>
+        <p role="status" aria-live="polite" aria-atomic="true">Consultando disponibilidad…</p>
       )}
       {showMine ? (
         <>
@@ -360,7 +365,7 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
               </fieldset>
               {!loading && !services.length && (
                 <div>
-                  <p>No hay servicios disponibles para reservar.</p>
+                  <p role="status">No hay servicios disponibles para reservar.</p>
                   <button
                     className="text-button"
                     onClick={() => setCatalogReload((n) => n + 1)}
@@ -415,11 +420,16 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
                         .join("")}
                     </span>
                     <strong>{b.nombre}</strong>
+                    {barber === b.id && (
+                      <span className="selection-indicator" aria-hidden="true">
+                        ✓ Seleccionado
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
               {!barbers.length && !loading && (
-                <p>No hay personal disponible.</p>
+                <p role="status">No hay personal disponible.</p>
               )}
               <label
                 className="booking-label date-field"
@@ -451,6 +461,11 @@ export function ReservaTurno({ onClose }: { onClose: () => void }) {
                     onClick={() => chooseTime(h)}
                   >
                     {h}
+                    {time === h && (
+                      <span className="selection-indicator" aria-hidden="true">
+                        ✓ Seleccionado
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
