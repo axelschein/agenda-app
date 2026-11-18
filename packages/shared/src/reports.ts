@@ -28,6 +28,7 @@ export interface TurnosPorDia {
 
 /** Panel de indicadores y reportes de Administración (CU12/CU14). */
 export interface PanelIndicadores {
+  generadoEn: string;
   resumen: IndicadoresResumen;
   serviciosMasPedidos: ServicioPedido[];
   rendimientoPorPeluquero: RendimientoPeluquero[];
